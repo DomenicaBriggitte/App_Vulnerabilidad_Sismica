@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/fields.dart';
+import 'assessed_buildings_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,11 +24,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _fakeLogin() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
+      // Mostrar mensaje de login exitoso (opcional)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login exitoso')),
+      );
+
+      // Redirigir a AssessedBuildingsPage
+      Navigator.pushReplacement(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Login (UI demo).')));
+        MaterialPageRoute(builder: (context) => const AssessedBuildingsPage()),
+      );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
