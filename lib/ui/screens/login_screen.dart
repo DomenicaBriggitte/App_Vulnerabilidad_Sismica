@@ -99,15 +99,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               '¿Aún no tienes una cuenta? ',
                               style: textTheme.bodyMedium?.copyWith(
-                                color: AppColors.text,
+                                color: const Color.fromARGB(255, 94, 94, 94),
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () {}, // ir a registro cuando exista
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/register');
+                              },
                               child: Text(
                                 'Registrarse',
                                 style: textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
+                                  color: const Color.fromARGB(255, 27, 27, 27),
                                 ),
                               ),
                             ),
