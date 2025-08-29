@@ -11,27 +11,54 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _username = TextEditingController();
-  final _role = TextEditingController();
+  final _cedula = TextEditingController();
+  final _nombre = TextEditingController();
+  final _rol = TextEditingController();
   final _email = TextEditingController();
-  final _phone = TextEditingController();
-  final _password = TextEditingController();
-  final _confirmPassword = TextEditingController();
+  final _telefono = TextEditingController();
+  final _direccion = TextEditingController();
+  final _passwordHash = TextEditingController();
+  final _confirmPasswordHash = TextEditingController();
+  String _completePhoneNumber = '';
 
   @override
   void dispose() {
+    _cedula.dispose();
+    _nombre.dispose();
+    _rol.dispose();
     _email.dispose();
-    _phone.dispose();
-    _password.dispose();
-    _confirmPassword.dispose();
+    _telefono.dispose();
+    _direccion.dispose();
+    _passwordHash.dispose();
+    _confirmPasswordHash.dispose();
     super.dispose();
   }
 
-  void _fakeLogin() {
+  void _registerUser() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login (UI demo).')));
+      // Datos a enviar al backend según el diccionario de datos:
+      final userData = {
+        'cedula': _cedula.text,
+        'nombre': _nombre.text,
+        'email': _email.text,
+        'telefono': _completePhoneNumber.isNotEmpty
+            ? _completePhoneNumber
+            : _telefono.text,
+        'direccion': _direccion.text,
+        'password_hash':
+            _passwordHash.text, // Este valor será hasheado en el backend
+        'rol': _rol.text,
+        'activo': true, // Por defecto activo
+        'photo_perfil': null, // Se puede agregar posteriormente
+      };
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Usuario registrado exitosamente (UI demo)'),
+        ),
+      );
+      // Aquí se debe conectar la lógica de registro con el backend
+      print('Datos a enviar: $userData');
     }
   }
 
@@ -76,30 +103,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        // Campo de usuario. Enviar como 'username' al backend (API de registro)
+                        // Campo de cédula. Enviar como 'cedula' al backend (API de registro)
                         TextFormField(
-                          controller: _username,
+                          controller: _cedula,
                           decoration: const InputDecoration(
-                            labelText: 'Usuario',
+                            labelText: 'Cédula',
                             border: OutlineInputBorder(),
                           ),
+                          keyboardType: TextInputType.number,
+                          maxLength: 10,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Ingrese un usuario';
+                              return 'Ingrese su cédula';
+                            }
+                            if (value.length != 10) {
+                              return 'La cédula debe tener 10 dígitos';
+                            }
+                            if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                              return 'Solo se permiten números';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 12),
-                        // Campo de selección de rol (enviar como role al backend)
-                        // Campo de selección de rol. Enviar como 'role' al backend (API de registro)
+                        // Campo de nombre completo. Enviar como 'nombre' al backend (API de registro)
+                        TextFormField(
+                          controller: _nombre,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre completo',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Ingrese su nombre completo';
+                            }
+                            if (!RegExp(
+                              r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$',
+                            ).hasMatch(value)) {
+                              return 'Solo se permiten letras y espacios';
+                            }
+                            if (value.length > 100) {
+                              return 'El nombre no puede exceder 100 caracteres';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        // Campo de selección de rol. Enviar como 'rol' al backend (API de registro)
                         DropdownButtonFormField<String>(
-                          value: _role.text.isNotEmpty ? _role.text : null,
+                          value: _rol.text.isNotEmpty ? _rol.text : null,
                           decoration: const InputDecoration(
                             labelText: 'Rol',
                             border: OutlineInputBorder(),
@@ -126,17 +182,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: TextStyle(color: Colors.black),
                               ),
                             ),
-                            DropdownMenuItem(
-                              value: 'cliente',
-                              child: Text(
-                                'Cliente',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
                           ],
                           onChanged: (value) {
                             setState(() {
-                              _role.text = value ?? '';
+                              _rol.text = value ?? '';
                             });
                           },
                           validator: (value) {
@@ -164,20 +213,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ).hasMatch(value)) {
                               return 'Ingrese un correo válido';
                             }
+                            if (value.length > 150) {
+                              return 'El correo no puede exceder 150 caracteres';
+                            }
                             return null;
                           },
                         ),
                         const SizedBox(height: 12),
-                        // Campo de teléfono con país. Enviar como 'phone' al backend (API de registro)
+                        // Campo de teléfono con país. Enviar como 'telefono' al backend (API de registro)
                         IntlPhoneField(
-                          controller: _phone,
+                          controller: _telefono,
                           decoration: const InputDecoration(
                             labelText: 'Teléfono',
                             border: OutlineInputBorder(),
                           ),
                           initialCountryCode: 'EC',
                           onChanged: (phone) {
-                            // phone.completeNumber contiene el número completo con país
+                            // Almacenar el número completo con país en formato E.164
+                            _completePhoneNumber = phone.completeNumber;
                           },
                           validator: (value) {
                             final phoneNumber = value?.number ?? '';
@@ -191,9 +244,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                         ),
                         const SizedBox(height: 12),
-                        // Campo de contraseña. Enviar como 'password' al backend (API de registro)
+                        // Campo de dirección. Enviar como 'direccion' al backend (API de registro)
                         TextFormField(
-                          controller: _password,
+                          controller: _direccion,
+                          decoration: const InputDecoration(
+                            labelText: 'Dirección',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Ingrese su dirección';
+                            }
+                            if (value.length > 255) {
+                              return 'La dirección no puede exceder 255 caracteres';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        // Campo de contraseña. Enviar como 'password_hash' al backend (API de registro)
+                        TextFormField(
+                          controller: _passwordHash,
                           decoration: const InputDecoration(
                             labelText: 'Contraseña',
                             border: OutlineInputBorder(),
@@ -219,7 +290,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 12),
                         // Campo de confirmar contraseña. Solo para validación local, no se envía al backend
                         TextFormField(
-                          controller: _confirmPassword,
+                          controller: _confirmPasswordHash,
                           decoration: const InputDecoration(
                             labelText: 'Confirmar contraseña',
                             border: OutlineInputBorder(),
@@ -229,18 +300,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Confirme su contraseña';
                             }
-                            if (value != _password.text) {
+                            if (value != _passwordHash.text) {
                               return 'Las contraseñas no coinciden';
                             }
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
-                        // ...existing code...
+                        const SizedBox(height: 20),
                         // Botón para enviar datos al backend (API de registro)
                         ElevatedButton(
                           onPressed:
-                              _fakeLogin, // Aquí se debe conectar la lógica de registro con el backend
+                              _registerUser, // Aquí se debe conectar la lógica de registro con el backend
                           child: const Text('Registrar'),
                         ),
                       ],

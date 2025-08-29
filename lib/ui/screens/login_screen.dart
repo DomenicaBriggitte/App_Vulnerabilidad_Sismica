@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/fields.dart';
-import 'assessed_buildings_screen.dart';
+import 'home_page.dart'; // 👈 importa tu home_page
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,35 +12,36 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
 
   @override
   void dispose() {
-    _email.dispose();
-    _password.dispose();
+    email.dispose();
+    password.dispose();
     super.dispose();
   }
 
-  void _fakeLogin() {
+  void _submitUIOnly() {
     if (_formKey.currentState!.validate()) {
-      // Mostrar mensaje de login exitoso (opcional)
+      // Opcional: mostrar SnackBar antes de navegar
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login exitoso')),
+        const SnackBar(content: Text('Inicio de sesión exitoso.')),
       );
 
-      // Redirigir a AssessedBuildingsPage
+      // 👇 Redirección a HomePage
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const AssessedBuildingsPage()),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -84,9 +85,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        AppEmailField(controller: _email),
+                        AppEmailField(controller: email),
                         const SizedBox(height: 12),
-                        AppPasswordField(controller: _password),
+                        AppPasswordField(controller: password),
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
@@ -98,17 +99,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton(
-                          onPressed: _fakeLogin,
-                          child: const Text('iniciar sesión'),
+                          onPressed: _submitUIOnly,
+                          child: const Text('Iniciar sesión'),
                         ),
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              '¿Aún no tienes una cuenta? ',
+                              '¿Aún no tienes una cuenta?',
                               style: textTheme.bodyMedium?.copyWith(
-                                color: const Color.fromARGB(255, 94, 94, 94),
+                                color: AppColors.text,
                               ),
                             ),
                             TextButton(
