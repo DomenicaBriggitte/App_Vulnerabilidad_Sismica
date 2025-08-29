@@ -1,3 +1,6 @@
 # flutter_application_1
+Instalar Dependencias
 
-A new Flutter project.
+Dentro del directorio del proyecto, instala las dependencias de Flutter ejecutando:
+
+flutter pub get
