@@ -1,6 +1,5 @@
 import 'dart:io';
 import '../../ui/screens/assessed_buildings_screen.dart';
-import '../../ui/screens/building_registry_1_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
@@ -82,7 +81,8 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
     }
 
     setState(() {
-      if (isFoto) { _foto = file;
+      if (isFoto) {
+        _foto = file;
       } else {
         _grafico = file;
       }

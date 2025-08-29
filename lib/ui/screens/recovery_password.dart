@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
-import '../widgets/fields.dart';
 
 class RecoveryPasswordScreen extends StatefulWidget {
   const RecoveryPasswordScreen({super.key});
