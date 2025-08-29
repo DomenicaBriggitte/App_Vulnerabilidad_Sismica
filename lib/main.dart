@@ -5,6 +5,9 @@ import 'ui/screens/login_screen.dart';
 import 'ui/screens/forgot_password_screen.dart';
 import 'ui/screens/register_screen.dart';
 import 'ui/screens/recovery_password.dart';
+import 'ui/screens/profile_page.dart';
+import 'ui/screens/home_page.dart';
+import 'ui/screens/buildings_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +37,9 @@ class SismosApp extends StatelessWidget {
         '/forgot': (_) => const ForgotPasswordScreen(),
         '/register': (context) => const RegisterScreen(),
         '/recovery': (context) => const RecoveryPasswordScreen(),
+        '/home': (context) => const HomePage(),
+        '/profile': (context) => const ProfilePage(),
+        '/buildings': (context) => const BuildingsPage(),
       },
     );
   }

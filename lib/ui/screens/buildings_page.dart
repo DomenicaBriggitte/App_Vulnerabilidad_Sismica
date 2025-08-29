@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../ui/screens/building_registry_1_screen.dart';
+
 
 class BuildingsPage extends StatefulWidget {
   const BuildingsPage({super.key});
@@ -49,8 +51,12 @@ class _BuildingsPageState extends State<BuildingsPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // Navegación a la pantalla de registro
-          Navigator.pushNamed(context, '/register-building');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RegistroEdificio1Page(),
+            ),
+          );
         },
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
