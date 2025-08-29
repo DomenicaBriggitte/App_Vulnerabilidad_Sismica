@@ -11,27 +11,31 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+
+  // Nombres alineados al diccionario de datos (tabla Usuarios)
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
 
   @override
   void dispose() {
-    _email.dispose();
-    _password.dispose();
+    email.dispose();
+    password.dispose();
     super.dispose();
   }
 
-  void _fakeLogin() {
+  void _submitUIOnly() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login (UI demo).')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inicio de sesión (solo UI).')),
+      );
+      // Aquí luego llamarías a tu backend para generar/validar password_hash
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -75,9 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        AppEmailField(controller: _email),
+                        AppEmailField(controller: email),
                         const SizedBox(height: 12),
-                        AppPasswordField(controller: _password),
+                        AppPasswordField(controller: password),
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
@@ -89,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton(
-                          onPressed: _fakeLogin,
+                          onPressed: _submitUIOnly,
                           child: const Text('iniciar sesión'),
                         ),
                         const SizedBox(height: 16),
@@ -97,9 +101,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              '¿Aún no tienes una cuenta? ',
+                              '¿Aún no tienes una cuenta?',
                               style: textTheme.bodyMedium?.copyWith(
-                                color: const Color.fromARGB(255, 94, 94, 94),
+                                color: AppColors.text,
                               ),
                             ),
                             TextButton(

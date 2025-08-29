@@ -11,13 +11,13 @@ class RecoveryPasswordScreen extends StatefulWidget {
 
 class _RecoveryPasswordScreenState extends State<RecoveryPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _password = TextEditingController();
-  final _confirmPassword = TextEditingController();
+  final _passwordHash = TextEditingController();
+  final _confirmPasswordHash = TextEditingController();
 
   @override
   void dispose() {
-    _password.dispose();
-    _confirmPassword.dispose();
+    _passwordHash.dispose();
+    _confirmPasswordHash.dispose();
     super.dispose();
   }
 
@@ -26,7 +26,11 @@ class _RecoveryPasswordScreenState extends State<RecoveryPasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Contraseña restablecida exitosamente.')),
       );
-      // Aquí puedes agregar la lógica para guardar la nueva contraseña
+      // Aquí puedes agregar la lógica para enviar el password_hash al backend (API de recuperación)
+      // Los datos a enviar serían:
+      // {
+      //   "password_hash": _passwordHash.text, // Este valor será hasheado en el backend
+      // }
     }
   }
 
@@ -75,9 +79,9 @@ class _RecoveryPasswordScreenState extends State<RecoveryPasswordScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        // Campo de nueva contraseña. Enviar como 'newPassword' al backend (API de recuperación)
+                        // Campo de nueva contraseña. Enviar como 'password_hash' al backend (API de recuperación)
                         TextFormField(
-                          controller: _password,
+                          controller: _passwordHash,
                           decoration: const InputDecoration(
                             labelText: 'Nueva contraseña',
                             border: OutlineInputBorder(),
@@ -102,7 +106,7 @@ class _RecoveryPasswordScreenState extends State<RecoveryPasswordScreen> {
                         const SizedBox(height: 12),
                         // Campo de confirmar nueva contraseña. Solo para validación local, no se envía al backend
                         TextFormField(
-                          controller: _confirmPassword,
+                          controller: _confirmPasswordHash,
                           decoration: const InputDecoration(
                             labelText: 'Confirmar nueva contraseña',
                             border: OutlineInputBorder(),
@@ -112,14 +116,14 @@ class _RecoveryPasswordScreenState extends State<RecoveryPasswordScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Confirme la nueva contraseña';
                             }
-                            if (value != _password.text) {
+                            if (value != _passwordHash.text) {
                               return 'Las contraseñas no coinciden';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 20),
-                        // Botón para enviar la nueva contraseña al backend (API de recuperación)
+                        // Botón para enviar la nueva password_hash al backend (API de recuperación)
                         ElevatedButton(
                           onPressed:
                               _resetPassword, // Aquí se debe conectar la lógica con el backend
