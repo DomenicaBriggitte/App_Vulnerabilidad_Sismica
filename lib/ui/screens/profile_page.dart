@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/ui/screens/home_page.dart';
 import '../../core/theme/app_colors.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -72,13 +73,23 @@ class ProfilePage extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.home),
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/home');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HomePage(),
+                  ),
+                );
               },
             ),
             IconButton(
               icon: const Icon(Icons.person),
               onPressed: () {
-                // Ya estamos en perfil
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfilePage(),
+                  ),
+                );
               },
               color: AppColors.primary,
             ),

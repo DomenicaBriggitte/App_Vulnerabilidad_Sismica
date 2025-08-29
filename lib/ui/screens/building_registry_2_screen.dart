@@ -1,7 +1,11 @@
+import 'package:flutter_application_1/ui/screens/profile_page.dart';
+
 import '../../ui/screens/assessed_buildings_screen.dart';
 //import 'package:evs/pages/perfil_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'home_page.dart';
 
 class RegistroEdificio2Page extends StatefulWidget {
   final String nombre;
@@ -41,19 +45,16 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
   final anioConstruccionController = TextEditingController();
   final anioAmpliacionController = TextEditingController();
   final unidadesController = TextEditingController();
-
   bool _ampliacionSi = false;
   String? _ocupacionSeleccionada;
 
-  final int _selectedIndex = 0;
+  int _selectedIndex = 0;
 
   int currentYear = DateTime.now().year;
-  /*
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
 
+
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
     if (index == 0) {
       Navigator.pushReplacement(
         context,
@@ -63,14 +64,9 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ).then((_) {
-        setState(() {
-          _selectedIndex = 0;
-        });
-      });
+      ).then((_) => setState(() => _selectedIndex = 0));
     }
   }
-*/
   final List<String> _ocupacionOpciones = [
     "Asamblea", "Comercial", "Servicios Em.", "Industria", "Oficina", "Escuela",
     "Almacén", "Residencial", "Herramientas",
@@ -411,6 +407,7 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
         ],
         currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

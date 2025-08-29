@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/screens/building_registry_2_screen.dart';
+import '../../ui/screens/home_page.dart';
+import '../../ui/screens/profile_page.dart';
 
 class RegistroEdificio1Page extends StatefulWidget {
   const RegistroEdificio1Page({super.key});
@@ -34,12 +36,12 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
     if (index == 0) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const AssessedBuildingsPage()),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else if (index == 1) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const RegistroEdificio1Page()),
+        MaterialPageRoute(builder: (context) => const ProfilePage()),
       ).then((_) => setState(() => _selectedIndex = 0));
     }
   }

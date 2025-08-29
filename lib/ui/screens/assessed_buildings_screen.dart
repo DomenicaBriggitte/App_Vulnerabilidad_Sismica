@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/ui/screens/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/screens/building_registry_1_screen.dart';
+import 'home_page.dart';
 
 class AssessedBuildingsPage extends StatefulWidget {
   const AssessedBuildingsPage({super.key});
@@ -51,20 +53,17 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
   }
 
   void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 1) {
+    setState(() => _selectedIndex = index);
+    if (index == 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    } else if (index == 1) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const RegistroEdificio1Page()),
-      ).then((_) {
-        setState(() {
-          _selectedIndex = 0;
-        });
-      });
+        MaterialPageRoute(builder: (context) => const ProfilePage()),
+      ).then((_) => setState(() => _selectedIndex = 0));
     }
   }
 

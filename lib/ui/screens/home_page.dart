@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import 'buildings_page.dart'; // Importa tu pantalla aquí
+import 'profile_page.dart';
+import 'assessed_buildings_screen.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -27,13 +30,29 @@ class HomePage extends StatelessWidget {
                   context,
                   'Edificios registrados',
                   'https://cdn-icons-png.flaticon.com/512/1441/1441359.png',
-                  '/buildings',
+                      () {
+                    // Navegar a building_registry_1_screen.dart sin ruta nombrada
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BuildingsPage(),
+                      ),
+                    );
+                  },
                 ),
                 _buildMenuOption(
                   context,
                   'Edificios evaluados',
                   'https://cdn-icons-png.flaticon.com/128/12218/12218407.png',
-                  '/evaluated-buildings',
+                      () {
+                    // Si quieres puedes dejar Navigator.pushNamed aquí
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AssessedBuildingsPage(),
+                          ),
+                        );
+                  },
                 ),
               ],
             ),
@@ -54,7 +73,12 @@ class HomePage extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.person),
               onPressed: () {
-                Navigator.pushNamed(context, '/profile');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfilePage(),
+                  ),
+                );
               },
             ),
           ],
@@ -64,11 +88,9 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildMenuOption(
-      BuildContext context, String title, String imageUrl, String route) {
+      BuildContext context, String title, String imageUrl, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, route);
-      },
+      onTap: onTap,
       child: Column(
         children: [
           Image.network(imageUrl, width: 80, height: 80),
