@@ -1,11 +1,10 @@
-import 'package:flutter_application_1/ui/screens/profile_page.dart';
-
-import '../../ui/screens/assessed_buildings_screen.dart';
-//import 'package:evs/pages/perfil_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'home_page.dart';
+import '../../ui/screens/assessed_buildings_screen.dart';
+import '../../ui/screens/profile_page.dart';
+import '../../ui/screens/home_page.dart';
+import '../../core/theme/app_colors.dart';
 
 class RegistroEdificio2Page extends StatefulWidget {
   final String nombre;
@@ -49,9 +48,12 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
   String? _ocupacionSeleccionada;
 
   int _selectedIndex = 0;
-
   int currentYear = DateTime.now().year;
 
+  final List<String> _ocupacionOpciones = [
+    "Asamblea", "Comercial", "Servicios Em.", "Industria", "Oficina", "Escuela",
+    "Almacén", "Residencial", "Herramientas",
+  ];
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
@@ -67,24 +69,20 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
       ).then((_) => setState(() => _selectedIndex = 0));
     }
   }
-  final List<String> _ocupacionOpciones = [
-    "Asamblea", "Comercial", "Servicios Em.", "Industria", "Oficina", "Escuela",
-    "Almacén", "Residencial", "Herramientas",
-  ];
 
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Color(0xFF6B7280)),
+      labelStyle: const TextStyle(color: AppColors.gray500),
       filled: true,
-      fillColor: const Color(0xFFF9FAFB),
+      fillColor: AppColors.background,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFD3D3D3)),
+        borderSide: const BorderSide(color: AppColors.gray300),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFF195AE6), width: 2),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
     );
@@ -135,7 +133,7 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const AssessedBuildingsPage()),
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -150,13 +148,13 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 249, 251, 249),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           "Registro Edificio",
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF195AE6),
+        backgroundColor: AppColors.primary,
         automaticallyImplyLeading: false,
       ),
       body: Padding(
@@ -184,9 +182,7 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
               const SizedBox(height: 10),
               TextFormField(
                 controller: areaController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: _inputDecoration("Área total de piso (m²)"),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -204,7 +200,6 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
                 },
               ),
               const SizedBox(height: 10),
-
               TextFormField(
                 controller: anioConstruccionController,
                 keyboardType: TextInputType.number,
@@ -226,7 +221,7 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
               const Text(
                 "¿Ampliación?",
                 style: TextStyle(
-                  color: Color(0xFF1E1E1E),
+                  color: AppColors.text,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -239,17 +234,15 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: _ampliacionSi
-                              ? const Color(0xFF19DBE6)
-                              : Colors.white,
-                          border: Border.all(color: const Color(0xFFD3D3D3)),
+                          color: _ampliacionSi ? AppColors.primary : Colors.white,
+                          border: Border.all(color: AppColors.gray300),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Center(
                           child: Text(
                             "SI",
                             style: TextStyle(
-                              color: Color(0xFF1E1E1E),
+                              color: AppColors.text,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -264,17 +257,15 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: !_ampliacionSi
-                              ? const Color(0xFF19DBE6)
-                              : Colors.white,
-                          border: Border.all(color: const Color(0xFFD3D3D3)),
+                          color: !_ampliacionSi ? AppColors.primary : Colors.white,
+                          border: Border.all(color: AppColors.gray300),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Center(
                           child: Text(
                             "NO",
                             style: TextStyle(
-                              color: Color(0xFF1E1E1E),
+                              color: AppColors.text,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -297,9 +288,7 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
                     return "Ingrese el año de ampliación";
                   }
                   final n = int.tryParse(value);
-                  final construccion = int.tryParse(
-                    anioConstruccionController.text,
-                  );
+                  final construccion = int.tryParse(anioConstruccionController.text);
                   if (n == null ||
                       construccion == null ||
                       n < construccion ||
@@ -313,7 +302,7 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
               const Text(
                 "Ocupación",
                 style: TextStyle(
-                  color: Color(0xFF1E1E1E),
+                  color: AppColors.text,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -328,21 +317,18 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
                 children: _ocupacionOpciones.map((opcion) {
                   final isSelected = _ocupacionSeleccionada == opcion;
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _ocupacionSeleccionada = opcion),
+                    onTap: () => setState(() => _ocupacionSeleccionada = opcion),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF19DBE6)
-                            : Colors.white,
-                        border: Border.all(color: const Color(0xFFD3D3D3)),
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        border: Border.all(color: AppColors.gray300),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
                         child: Text(
                           opcion,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Color(0xFF1E1E1E)),
+                          style: const TextStyle(color: AppColors.text),
                         ),
                       ),
                     ),
@@ -369,7 +355,7 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF19E6AC),
+                  backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -388,11 +374,11 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
                   ElevatedButton(
                     onPressed: _guardarEnSupabase,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF19DBE6),
+                      backgroundColor: AppColors.primary,
                     ),
                     child: const Text(
                       "Finalizar",
-                      style: TextStyle(color: Colors.black),
+                      style: TextStyle(color: AppColors.text),
                     ),
                   ),
                 ],

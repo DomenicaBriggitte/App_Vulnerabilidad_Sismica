@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/theme/app_colors.dart';
 import '../../ui/screens/building_registry_2_screen.dart';
 import '../../ui/screens/home_page.dart';
 import '../../ui/screens/profile_page.dart';
@@ -47,9 +48,8 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
 
   Future<void> _pickFile(bool isFoto) async {
     final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-    );
+    final XFile? pickedFile =
+    await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
 
     final file = File(pickedFile.path);
@@ -96,9 +96,9 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
       await supabase.storage.from('edificios').upload(path, file);
       return supabase.storage.from('edificios').getPublicUrl(path);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error al subir archivo: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al subir archivo: $e")),
+      );
       return null;
     }
   }
@@ -108,8 +108,7 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
       if (_foto == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Debes subir al menos una foto de la fachada"),
-          ),
+              content: Text("Debes subir al menos una foto de la fachada")),
         );
         return;
       }
@@ -159,20 +158,20 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Color(0xFF6B7280)),
+      labelStyle: const TextStyle(color: AppColors.gray500),
       filled: true,
-      fillColor: const Color(0xFFF9FAFB),
+      fillColor: AppColors.background,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFD3D3D3), width: 1.5),
+        borderSide: const BorderSide(color: AppColors.gray300, width: 1.5),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFD3D3D3), width: 1.5),
+        borderSide: const BorderSide(color: AppColors.gray300, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF0095EB), width: 2),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
     );
@@ -186,33 +185,21 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
           height: 100,
           width: 100,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
+            border: Border.all(color: AppColors.gray300),
             borderRadius: BorderRadius.circular(12),
           ),
           child: file != null
               ? isPdf
-                    ? const Icon(
-                        Icons.picture_as_pdf,
-                        size: 60,
-                        color: Colors.red,
-                      )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(file, fit: BoxFit.cover),
-                      )
-              : const Icon(Icons.image, size: 60, color: Colors.grey),
+              ? const Icon(Icons.picture_as_pdf,
+              size: 60, color: AppColors.error)
+              : ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(file, fit: BoxFit.cover),
+          )
+              : const Icon(Icons.image, size: 60, color: AppColors.gray500),
         ),
         const SizedBox(height: 6),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: label == "Foto"
-                ? const Color(0xFF19DBE6)
-                : const Color(0xFF199BE6),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
           onPressed: () => _pickFile(label == "Foto"),
           child: Text("Subir $label"),
         ),
@@ -223,9 +210,9 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF195AE6),
+        backgroundColor: AppColors.primary,
         automaticallyImplyLeading: false,
         title: const Text(
           "Registro Edificio",
@@ -269,14 +256,14 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
                 controller: codigoPostalController,
                 decoration: _inputDecoration("Código Postal"),
                 validator: (v) =>
-                    v != null && v.length > 10 ? "Máximo 10 caracteres" : null,
+                v != null && v.length > 10 ? "Máximo 10 caracteres" : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: usoController,
                 decoration: _inputDecoration("Uso del edificio"),
                 validator: (v) =>
-                    v != null && v.length > 50 ? "Máximo 50 caracteres" : null,
+                v != null && v.length > 50 ? "Máximo 50 caracteres" : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -329,7 +316,7 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
                     if (time != null) {
                       setState(() {
                         fechaHoraController.text =
-                            "${pickedDate.toLocal().toString().split(' ')[0]} ${time.format(context)}";
+                        "${pickedDate.toLocal().toString().split(' ')[0]} ${time.format(context)}";
                       });
                     }
                   }
@@ -338,7 +325,7 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF19E6AC),
+                  backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -362,6 +349,8 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.gray500,
       ),
     );
   }
