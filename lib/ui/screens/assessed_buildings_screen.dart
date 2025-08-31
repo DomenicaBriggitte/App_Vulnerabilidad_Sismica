@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/ui/screens/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../ui/screens/building_registry_1_screen.dart';
 import 'home_page.dart';
+import '../../core/theme/app_colors.dart'; // 👈 importar AppColors
 
 class AssessedBuildingsPage extends StatefulWidget {
   const AssessedBuildingsPage({super.key});
@@ -18,14 +18,6 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
   List<Map<String, dynamic>> _filteredEdificios = [];
   int _selectedIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-
-  final Color colorFondo = const Color(0xFFF9FAFB);
-  final Color colorTexto = const Color(0xFF1E1E1E);
-  final Color colorSecundario = const Color(0xFF6B7280);
-  final Color colorPrimario = const Color(0xFF195AE6);
-  final Color colorAlertaVerde = const Color(0xFF22C55E);
-  final Color colorAlertaAmarillo = const Color(0xFFEAB308);
-  final Color colorAlertaRojo = const Color(0xFFDC2626);
 
   Future<List<Map<String, dynamic>>> _getEdificios() async {
     final response = await supabase
@@ -46,8 +38,11 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredEdificios = _edificios
-          .where((edificio) =>
-          (edificio['nombre_edificio'] ?? "").toLowerCase().contains(query))
+          .where(
+            (edificio) => (edificio['nombre_edificio'] ?? "")
+                .toLowerCase()
+                .contains(query),
+          )
           .toList();
     });
   }
@@ -70,7 +65,7 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: colorFondo,
+      backgroundColor: AppColors.background, // 👈 Usando AppColors
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,9 +73,12 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
             Container(
               width: double.infinity,
               height: 28,
-              color: colorPrimario,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text(
+              color: AppColors.primary,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: const Text(
                 "SismosApp",
                 style: TextStyle(
                   fontSize: 9,
@@ -90,8 +88,11 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
               ),
             ),
             Container(
-              color: colorPrimario,
-              padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+              color: AppColors.primary,
+              padding: const EdgeInsets.symmetric(
+                vertical: 12.0,
+                horizontal: 16.0,
+              ),
               width: double.infinity,
               child: const Text(
                 "Edificios",
@@ -112,13 +113,19 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
                   }
                   if (snapshot.hasError) {
                     return Center(
-                        child: Text("Error: ${snapshot.error}",
-                            style: TextStyle(color: colorAlertaRojo)));
+                      child: Text(
+                        "Error: ${snapshot.error}",
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    );
                   }
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(
-                        child: Text("No hay edificios registrados",
-                            style: TextStyle(color: colorSecundario)));
+                    return const Center(
+                      child: Text(
+                        "No hay edificios registrados",
+                        style: TextStyle(color: AppColors.gray500),
+                      ),
+                    );
                   }
 
                   _edificios = snapshot.data!;
@@ -128,8 +135,11 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
 
                   return Column(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.0,
+                          vertical: 8.0,
+                        ),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -137,7 +147,7 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w500,
-                              color: colorTexto,
+                              color: AppColors.text,
                             ),
                           ),
                         ),
@@ -151,7 +161,9 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
                             prefixIcon: const Icon(Icons.search),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colorPrimario),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                         ),
@@ -159,12 +171,13 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
                       Expanded(
                         child: GridView.builder(
                           padding: const EdgeInsets.all(12),
-                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 220,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.75,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 220,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.75,
+                              ),
                           itemCount: _filteredEdificios.length,
                           itemBuilder: (context, index) {
                             final edificio = _filteredEdificios[index];
@@ -183,7 +196,9 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
                                     children: [
                                       if (edificio['foto_url'] != null)
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Image.network(
                                             edificio['foto_url'],
                                             height: 100,
@@ -193,11 +208,12 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
                                         ),
                                       const SizedBox(height: 6),
                                       Text(
-                                        edificio['nombre_edificio'] ?? "Sin nombre",
-                                        style: TextStyle(
+                                        edificio['nombre_edificio'] ??
+                                            "Sin nombre",
+                                        style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: colorTexto,
+                                          color: AppColors.text,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -205,10 +221,11 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        edificio['direccion'] ?? "Sin dirección",
-                                        style: TextStyle(
+                                        edificio['direccion'] ??
+                                            "Sin dirección",
+                                        style: const TextStyle(
                                           fontSize: 16,
-                                          color: colorSecundario,
+                                          color: AppColors.gray500,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -237,12 +254,11 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: colorPrimario,
-        unselectedItemColor: colorSecundario,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.gray500,
       ),
     );
   }
-
 
   @override
   void dispose() {

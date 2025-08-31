@@ -13,6 +13,7 @@ dependencies:
   intl_phone_field: ^3.2.0
   supabase_flutter: ^2.10.0
   image_picker: ^1.2.0
+  mime: ^2.0.0
 
 dev_dependencies:
   flutter_test:
