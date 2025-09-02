@@ -31,7 +31,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loginBackend() async {
     final String apiUrl =
-        "http://10.0.2.2:3000/auth/login"; // usar 10.0.2.2 en Android Emulator
+        "http://192.168.100.4:3000/auth/login";
+    //http://<IP_PC>.4:3000/auth/login ip de su computadora
+    //http://10.0.2.2:3000/auth/login Android Emulator
+    //http://localhost:3000/auth/login iOS Simulator
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
