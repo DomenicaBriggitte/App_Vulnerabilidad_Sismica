@@ -4,52 +4,42 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
-import '../../ui/screens/building_registry_2_screen.dart';
-import '../../ui/screens/home_page.dart';
-import '../../ui/screens/profile_page.dart';
+import 'building_registry_2_screen.dart';
+import 'home_page.dart';
+import 'profile_page.dart';
 
-class RegistroEdificio1Page extends StatefulWidget {
-  const RegistroEdificio1Page({super.key});
+class BuildingRegistry1Screen extends StatefulWidget {
+  const BuildingRegistry1Screen({super.key});
 
   @override
-  State<RegistroEdificio1Page> createState() => _RegistroEdificio1PageState();
+  State<BuildingRegistry1Screen> createState() => _BuildingRegistry1ScreenState();
 }
 
-class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
+class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
   final _formKey = GlobalKey<FormState>();
 
   final nombreController = TextEditingController();
   final direccionController = TextEditingController();
   final codigoPostalController = TextEditingController();
-  final usoController = TextEditingController();
-  final latitudController = TextEditingController();
-  final longitudController = TextEditingController();
-  final inspectorController = TextEditingController();
-  final fechaHoraController = TextEditingController();
+
   File? _foto;
   File? _grafico;
+
   final supabase = Supabase.instance.client;
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
     if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      Navigator.pushNamed(context, '/home');
     } else if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ).then((_) => setState(() => _selectedIndex = 0));
+      Navigator.pushNamed(context, '/profile');
     }
   }
 
   Future<void> _pickFile(bool isFoto) async {
     final picker = ImagePicker();
-    final XFile? pickedFile =
-    await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
 
     final file = File(pickedFile.path);
@@ -107,14 +97,7 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
     if (_formKey.currentState!.validate()) {
       if (_foto == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Debes subir al menos una foto de la fachada")),
-        );
-        return;
-      }
-      if (fechaHoraController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Debes seleccionar la fecha y hora")),
+          const SnackBar(content: Text("Debes subir al menos una foto de la fachada")),
         );
         return;
       }
@@ -138,15 +121,10 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => RegistroEdificio2Page(
+          builder: (context) => BuildingRegistry2Screen(
             nombre: nombreController.text,
             direccion: direccionController.text,
             codigoPostal: codigoPostalController.text,
-            uso: usoController.text,
-            latitud: latitudController.text,
-            longitud: longitudController.text,
-            inspector: inspectorController.text,
-            fechaHora: fechaHoraController.text,
             fotoUrl: fotoUrl,
             graficoUrl: graficoUrl,
           ),
@@ -190,8 +168,7 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
           ),
           child: file != null
               ? isPdf
-              ? const Icon(Icons.picture_as_pdf,
-              size: 60, color: AppColors.error)
+              ? const Icon(Icons.picture_as_pdf, size: 60, color: AppColors.error)
               : ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.file(file, fit: BoxFit.cover),
@@ -228,12 +205,11 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _previewWidget(_foto, "Foto"),
-                  _previewWidget(_grafico, "Gráfico"),
+                  SizedBox(width: 150, child: _previewWidget(_foto, "Foto")),
+                  SizedBox(width: 150, child: _previewWidget(_grafico, "Gráfico")),
                 ],
               ),
               const SizedBox(height: 10),
-
               TextFormField(
                 controller: nombreController,
                 decoration: _inputDecoration("Nombre del edificio"),
@@ -258,86 +234,44 @@ class _RegistroEdificio1PageState extends State<RegistroEdificio1Page> {
                 validator: (v) =>
                 v != null && v.length > 10 ? "Máximo 10 caracteres" : null,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: usoController,
-                decoration: _inputDecoration("Uso del edificio"),
-                validator: (v) =>
-                v != null && v.length > 50 ? "Máximo 50 caracteres" : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: latitudController,
-                decoration: _inputDecoration("Latitud"),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return null;
-                  final regex = RegExp(r'^-?\d{1,3}\.\d{1,6}$');
-                  return !regex.hasMatch(v) ? "Formato inválido (9,6)" : null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: longitudController,
-                decoration: _inputDecoration("Longitud"),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return null;
-                  final regex = RegExp(r'^-?\d{1,3}\.\d{1,6}$');
-                  return !regex.hasMatch(v) ? "Formato inválido (9,6)" : null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: inspectorController,
-                decoration: _inputDecoration("Inspector"),
-                validator: (v) => v != null && v.length > 100
-                    ? "Máximo 100 caracteres"
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: fechaHoraController,
-                decoration: _inputDecoration("Fecha y hora"),
-                readOnly: true,
-                onTap: () async {
-                  FocusScope.of(context).requestFocus(FocusNode());
-                  DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (pickedDate != null) {
-                    TimeOfDay? time = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (time != null) {
-                      setState(() {
-                        fechaHoraController.text =
-                        "${pickedDate.toLocal().toString().split(' ')[0]} ${time.format(context)}";
-                      });
-                    }
-                  }
-                },
-              ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/building');
+                      },
+                      child: const Text("Cancelar"),
+                    ),
                   ),
-                ),
-                onPressed: _siguiente,
-                child: const Text(
-                  "Siguiente",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: _siguiente,
+                      child: const Text("Siguiente"),
+                    ),
+                  ),
+                ],
               ),
+
             ],
           ),
         ),

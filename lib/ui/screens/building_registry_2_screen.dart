@@ -1,72 +1,72 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../ui/screens/assessed_buildings_screen.dart';
-import '../../ui/screens/profile_page.dart';
-import '../../ui/screens/home_page.dart';
 import '../../core/theme/app_colors.dart';
+import 'building_registry_3_screen.dart';
+import 'home_page.dart';
+import 'profile_page.dart';
 
-class RegistroEdificio2Page extends StatefulWidget {
+class BuildingRegistry2Screen extends StatefulWidget {
   final String nombre;
   final String direccion;
   final String codigoPostal;
-  final String uso;
-  final String latitud;
-  final String longitud;
-  final String inspector;
-  final String fechaHora;
   final String? fotoUrl;
   final String? graficoUrl;
 
-  const RegistroEdificio2Page({
+  const BuildingRegistry2Screen({
     super.key,
-    required this.nombre,
-    required this.direccion,
-    required this.codigoPostal,
-    required this.uso,
-    required this.latitud,
-    required this.longitud,
-    required this.inspector,
-    required this.fechaHora,
+    this.nombre='',
+    this.direccion='',
+    this.codigoPostal='',
     this.fotoUrl,
     this.graficoUrl,
   });
 
   @override
-  State<RegistroEdificio2Page> createState() => _RegistroEdificio2PageState();
+  State<BuildingRegistry2Screen> createState() => _BuildingRegistry2ScreenState();
 }
 
-class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
+class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
   final _formKey = GlobalKey<FormState>();
 
-  final pisosController = TextEditingController();
-  final areaController = TextEditingController();
-  final anioConstruccionController = TextEditingController();
-  final anioAmpliacionController = TextEditingController();
-  final unidadesController = TextEditingController();
-  bool _ampliacionSi = false;
-  String? _ocupacionSeleccionada;
+  final otrasIdentificacionesController = TextEditingController();
+  final usoController = TextEditingController();
+  final latitudController = TextEditingController();
+  final longitudController = TextEditingController();
+  final inspectorController = TextEditingController();
+  final fechaController = TextEditingController();
+  final horaController = TextEditingController();
 
   int _selectedIndex = 0;
-  int currentYear = DateTime.now().year;
-
-  final List<String> _ocupacionOpciones = [
-    "Asamblea", "Comercial", "Servicios Em.", "Industria", "Oficina", "Escuela",
-    "Almacén", "Residencial", "Herramientas",
-  ];
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
     if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      Navigator.pushNamed(context, '/home');
     } else if (index == 1) {
+      Navigator.pushNamed(context, '/profile');
+    }
+  }
+
+  void _siguiente() {
+    if (_formKey.currentState!.validate()) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ).then((_) => setState(() => _selectedIndex = 0));
+        MaterialPageRoute(
+          builder: (context) => BuildingRegistry3Screen(
+            nombre: widget.nombre,
+            direccion: widget.direccion,
+            codigoPostal: widget.codigoPostal,
+            fotoUrl: widget.fotoUrl,
+            graficoUrl: widget.graficoUrl,
+            otrasIdentificaciones: otrasIdentificacionesController.text,
+            uso: usoController.text,
+            latitud: latitudController.text,
+            longitud: longitudController.text,
+            inspector: inspectorController.text,
+            fecha: fechaController.text,
+            hora: horaController.text,
+          ),
+        ),
+      );
     }
   }
 
@@ -77,72 +77,19 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
       filled: true,
       fillColor: AppColors.background,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.gray300),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.gray300, width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.gray300, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
     );
-  }
-
-  Future<void> _guardarEnSupabase() async {
-    final supabase = Supabase.instance.client;
-
-    int? parseInt(String? value) {
-      if (value == null || value.isEmpty) return null;
-      return int.tryParse(value);
-    }
-
-    await supabase.from('edificios').insert({
-      'nombre_edificio': widget.nombre,
-      'direccion': widget.direccion,
-      'codigo_postal': widget.codigoPostal,
-      'uso_principal': widget.uso,
-      'latitud': widget.latitud,
-      'longitud': widget.longitud,
-      'inspector': widget.inspector,
-      'fecha_hora': widget.fechaHora,
-      'foto_url': widget.fotoUrl,
-      'grafico_url': widget.graficoUrl,
-      'numero_pisos': parseInt(pisosController.text),
-      'area_total_pisos': parseInt(areaController.text),
-      'anio_construccion': parseInt(anioConstruccionController.text),
-      'anio_ampliacion': _ampliacionSi
-          ? parseInt(anioAmpliacionController.text)
-          : null,
-      'ocupacion': _ocupacionSeleccionada,
-      'unidades': parseInt(unidadesController.text),
-    });
-
-    pisosController.clear();
-    areaController.clear();
-    anioConstruccionController.clear();
-    anioAmpliacionController.clear();
-    unidadesController.clear();
-    setState(() {
-      _ampliacionSi = false;
-      _ocupacionSeleccionada = null;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Datos guardados en Supabase ✅")),
-    );
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const AssessedBuildingsPage()),
-          (route) => false,
-    );
-  }
-
-  void _siguiente() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Siguiente paso... 🚀")));
-    }
   }
 
   @override
@@ -150,12 +97,12 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        automaticallyImplyLeading: false,
         title: const Text(
           "Registro Edificio",
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: AppColors.primary,
-        automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -164,193 +111,40 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
           child: ListView(
             children: [
               TextFormField(
-                controller: pisosController,
-                keyboardType: TextInputType.number,
-                maxLength: 3,
-                decoration: _inputDecoration("Número de pisos"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Ingrese el número de pisos";
-                  }
-                  final n = int.tryParse(value);
-                  if (n == null || n < 1) {
-                    return "Debe ser un número entero ≥ 1";
-                  }
-                  return null;
-                },
+                controller: otrasIdentificacionesController,
+                decoration: _inputDecoration("Otras identificaciones"),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: areaController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: _inputDecoration("Área total de piso (m²)"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Ingrese el área total";
-                  }
-                  final n = double.tryParse(value);
-                  if (n == null || n <= 0) {
-                    return "Debe ser un número decimal > 0";
-                  }
-                  final parts = value.split(".");
-                  if (parts.length == 2 && parts[1].length > 2) {
-                    return "Máx. 2 decimales";
-                  }
-                  return null;
-                },
+                controller: usoController,
+                decoration: _inputDecoration("Uso del edificio"),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: anioConstruccionController,
+                controller: latitudController,
+                decoration: _inputDecoration("Latitud"),
                 keyboardType: TextInputType.number,
-                maxLength: 4,
-                decoration: _inputDecoration("Año de construcción"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Ingrese el año de construcción";
-                  }
-                  final n = int.tryParse(value);
-                  if (n == null || n < 1800 || n > currentYear) {
-                    return "Debe estar entre 1800 y $currentYear";
-                  }
-                  return null;
-                },
               ),
-              const SizedBox(height: 10),
-
-              const Text(
-                "¿Ampliación?",
-                style: TextStyle(
-                  color: AppColors.text,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _ampliacionSi = true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: _ampliacionSi ? AppColors.primary : Colors.white,
-                          border: Border.all(color: AppColors.gray300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "SI",
-                            style: TextStyle(
-                              color: AppColors.text,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _ampliacionSi = false),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: !_ampliacionSi ? AppColors.primary : Colors.white,
-                          border: Border.all(color: AppColors.gray300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "NO",
-                            style: TextStyle(
-                              color: AppColors.text,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: anioAmpliacionController,
-                enabled: _ampliacionSi,
+                controller: longitudController,
+                decoration: _inputDecoration("Longitud"),
                 keyboardType: TextInputType.number,
-                maxLength: 4,
-                decoration: _inputDecoration("Año de ampliación"),
-                validator: (value) {
-                  if (!_ampliacionSi) return null;
-                  if (value == null || value.isEmpty) {
-                    return "Ingrese el año de ampliación";
-                  }
-                  final n = int.tryParse(value);
-                  final construccion = int.tryParse(anioConstruccionController.text);
-                  if (n == null ||
-                      construccion == null ||
-                      n < construccion ||
-                      n > currentYear) {
-                    return "Debe ser ≥ año construcción y ≤ $currentYear";
-                  }
-                  return null;
-                },
               ),
-              const SizedBox(height: 10),
-              const Text(
-                "Ocupación",
-                style: TextStyle(
-                  color: AppColors.text,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 5),
-              GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 3,
-                crossAxisSpacing: 5,
-                mainAxisSpacing: 5,
-                childAspectRatio: 2.5,
-                physics: const NeverScrollableScrollPhysics(),
-                children: _ocupacionOpciones.map((opcion) {
-                  final isSelected = _ocupacionSeleccionada == opcion;
-                  return GestureDetector(
-                    onTap: () => setState(() => _ocupacionSeleccionada = opcion),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : Colors.white,
-                        border: Border.all(color: AppColors.gray300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          opcion,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.text),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: unidadesController,
-                keyboardType: TextInputType.number,
-                maxLength: 5,
-                decoration: _inputDecoration("Unidades"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Ingrese el número de unidades";
-                  }
-                  final n = int.tryParse(value);
-                  if (n == null || n < 1) {
-                    return "Debe ser un número entero ≥ 1";
-                  }
-                  return null;
-                },
+                controller: inspectorController,
+                decoration: _inputDecoration("Nombre del inspector"),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: fechaController,
+                decoration: _inputDecoration("Fecha"),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: horaController,
+                decoration: _inputDecoration("Hora"),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -368,21 +162,6 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: _guardarEnSupabase,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                    ),
-                    child: const Text(
-                      "Finalizar",
-                      style: TextStyle(color: AppColors.text),
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ),
@@ -394,6 +173,8 @@ class _RegistroEdificio2PageState extends State<RegistroEdificio2Page> {
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.gray500,
       ),
     );
   }

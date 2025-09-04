@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
-import 'buildings_page.dart'; // Importa tu pantalla aquí
+import 'buildings_screen.dart'; // Importa tu pantalla aquí
 import 'profile_page.dart';
 import 'assessed_buildings_screen.dart';
 
@@ -35,7 +35,7 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const BuildingsPage(),
+                        builder: (context) => const BuildingsScreen(),
                       ),
                     );
                   },

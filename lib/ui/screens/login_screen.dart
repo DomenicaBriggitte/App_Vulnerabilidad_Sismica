@@ -30,18 +30,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginBackend() async {
-    final String apiUrl =
-        "http://192.168.100.4:3000/auth/login";
+    //URL de la API donde se enviará la petición.
+    final String apiUrl ="http://192.168.100.4:3000/auth/login";
     //http://<IP_PC>.4:3000/auth/login ip de su computadora
     //http://10.0.2.2:3000/auth/login Android Emulator
     //http://localhost:3000/auth/login iOS Simulator
+    //Se valida que los campos de email y contraseña estén correctos
     if (!_formKey.currentState!.validate()) return;
-
+    //Se activa el estado de cargando
     setState(() {
       _loading = true;
     });
 
     try {
+      //Se hace una petición POST a la API
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
@@ -50,9 +52,9 @@ class _LoginScreenState extends State<LoginScreen> {
           "password": password.text.trim(),
         }),
       );
-
+      //Convierte la respuesta del servidor (JSON en texto) en un objeto Map de Dart
       final data = jsonDecode(response.body);
-
+      //Login exitoso
       if (response.statusCode == 200 && data['success'] == true) {
         final token = data['token'];
         final userId = data['userId'];
@@ -62,20 +64,20 @@ class _LoginScreenState extends State<LoginScreen> {
           const SnackBar(content: Text('Inicio de sesión exitoso.')),
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        Navigator.pushNamed(context, '/home');
+        //Error en credenciales
       } else {
         final message = data['error']?['message'] ?? 'Error desconocido';
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $message')));
       }
+      //Error de conexión
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al conectar con el servidor: $e')),
       );
+      //Desactivar estado de cargando
     } finally {
       setState(() {
         _loading = false;
@@ -138,12 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ForgotPasswordScreen(),
-                                ),
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/forgot',
+                                    (Route<dynamic> route) => false,
                               );
                             },
                             child: const Text('¿Olvidó su contraseña?'),
@@ -178,12 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             TextButton(
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const RegisterScreen(),
-                                  ),
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/register',
+                                      (Route<dynamic> route) => false,
                                 );
                               },
                               child: Text(

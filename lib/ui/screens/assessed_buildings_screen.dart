@@ -50,15 +50,9 @@ class _AssessedBuildingsPageState extends State<AssessedBuildingsPage> {
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
     if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      Navigator.pushNamed(context, '/home');
     } else if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ).then((_) => setState(() => _selectedIndex = 0));
+      Navigator.pushNamed(context, '/profile');
     }
   }
 
