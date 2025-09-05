@@ -11,6 +11,7 @@ import '../../ui/screens/exten_revis.dart';
 import '../../ui/screens/forgot_password_screen.dart';
 import '../../ui/screens/home_page.dart';
 import '../../ui/screens/login_screen.dart';
+import '../../ui/screens/profile_admin_screen.dart';
 import '../../ui/screens/profile_page.dart';
 import '../../ui/screens/recovery_password.dart';
 import '../../ui/screens/register_screen.dart';
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
         '/exten': (_) => const ExtensionRevisionPage(),
         '/forgot': (_) => const ForgotPasswordScreen(),
         '/home': (context) => const HomePage(),
+        '/profileAdmin': (_) => const ProfileAdminScreen(),
         '/profile': (_) => const ProfilePage(),
         '/register': (context) => const RegisterScreen(),
         '/recovery': (context) => const RecoveryPasswordScreen(),

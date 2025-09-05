@@ -13,6 +13,7 @@ class LoginScreen extends StatefulWidget {
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
+
 }
 
 class _LoginScreenState extends State<LoginScreen> {
@@ -58,13 +59,17 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200 && data['success'] == true) {
         final token = data['token'];
         final userId = data['userId'];
-
+        final userName = data['nombre'];
         // Aquí podrías guardar token en local storage si lo necesitas
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Inicio de sesión exitoso.')),
         );
 
-        Navigator.pushNamed(context, '/home');
+        Navigator.pushNamed(
+          context,
+          '/home',
+          arguments: {'userId': userId, 'userName': userName}, // pasamos también el nombre
+        );
         //Error en credenciales
       } else {
         final message = data['error']?['message'] ?? 'Error desconocido';
