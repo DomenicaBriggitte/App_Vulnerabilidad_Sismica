@@ -1,26 +1,24 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/ui/screens/forgot_password_screen.dart';
 import 'package:flutter_application_1/ui/screens/register_screen.dart';
-import 'home_page.dart'; // 👈 tu home_page
+import 'home_page.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/fields.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
-
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
-
   bool _loading = false;
 
   @override
@@ -31,20 +29,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginBackend() async {
-    //URL de la API donde se enviará la petición.
-    final String apiUrl ="http://192.168.100.4:3000/auth/login";
-    //http://<IP_PC>.4:3000/auth/login ip de su computadora
-    //http://10.0.2.2:3000/auth/login Android Emulator
-    //http://localhost:3000/auth/login iOS Simulator
-    //Se valida que los campos de email y contraseña estén correctos
+    final String apiUrl = "http://192.168.100.4:3000/auth/login";
+
     if (!_formKey.currentState!.validate()) return;
-    //Se activa el estado de cargando
-    setState(() {
-      _loading = true;
-    });
+
+    setState(() => _loading = true);
 
     try {
-      //Se hace una petición POST a la API
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
@@ -53,40 +44,48 @@ class _LoginScreenState extends State<LoginScreen> {
           "password": password.text.trim(),
         }),
       );
-      //Convierte la respuesta del servidor (JSON en texto) en un objeto Map de Dart
+
       final data = jsonDecode(response.body);
-      //Login exitoso
+      debugPrint('Login response raw: ${response.body}');
+      debugPrint('Login response parsed: $data');
+
       if (response.statusCode == 200 && data['success'] == true) {
-        final token = data['token'];
-        final userId = data['userId'];
-        final userName = data['nombre'];
-        // Aquí podrías guardar token en local storage si lo necesitas
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inicio de sesión exitoso.')),
-        );
+        // 🔹 Manejo seguro del token
+        final tokenField = data['token'];
+        final token = tokenField is Map ? tokenField['access'] ?? '' : tokenField.toString();
+
+        final userId = data['userId']?.toString() ?? '';
+        final userName = (data['nombre'] ?? 'Usuario').toString();
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('accessToken', token);
+        await prefs.setString('userId', userId);
+        await prefs.setString('userName', userName);
 
         Navigator.pushNamed(
           context,
           '/home',
-          arguments: {'userId': userId, 'userName': userName}, // pasamos también el nombre
+          arguments: {'userId': userId, 'userName': userName, 'token': token},
         );
-        //Error en credenciales
       } else {
-        final message = data['error']?['message'] ?? 'Error desconocido';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $message')));
+        // Manejo de errores del backend
+        String message = 'Error desconocido';
+        if (data['error'] != null) {
+          if (data['error'] is Map && data['error']['message'] != null) {
+            message = data['error']['message'];
+          } else if (data['error'] is String) {
+            message = data['error'];
+          }
+        }
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $message')));
       }
-      //Error de conexión
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al conectar con el servidor: $e')),
       );
-      //Desactivar estado de cargando
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
   }
 
@@ -104,35 +103,22 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'SismosApp',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: AppColors.text,
-                    ),
-                  ),
+                  Text('SismosApp', style: textTheme.titleMedium?.copyWith(color: AppColors.text)),
                   const SizedBox(height: 16),
                   const Center(child: AppLogo()),
                   const SizedBox(height: 24),
                   Center(
-                    child: Text(
-                      'Iniciar sesión',
-                      style: textTheme.titleLarge?.copyWith(
-                        color: AppColors.text,
-                      ),
-                    ),
+                    child: Text('Iniciar sesión', style: textTheme.titleLarge?.copyWith(color: AppColors.text)),
                   ),
                   const SizedBox(height: 6),
                   Center(
                     child: Text(
                       'Ingrese su correo y su contraseña para iniciar sesión',
                       textAlign: TextAlign.center,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: AppColors.gray500,
-                      ),
+                      style: textTheme.bodyMedium?.copyWith(color: AppColors.gray500),
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Form(
                     key: _formKey,
                     child: Column(
@@ -160,13 +146,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: _loading ? null : _loginBackend,
                             child: _loading
                                 ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                                 : const Text('Iniciar sesión'),
                           ),
                         ),
@@ -176,9 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             Text(
                               '¿Aún no tienes una cuenta?',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: AppColors.text,
-                              ),
+                              style: textTheme.bodyMedium?.copyWith(color: AppColors.text),
                             ),
                             TextButton(
                               onPressed: () {

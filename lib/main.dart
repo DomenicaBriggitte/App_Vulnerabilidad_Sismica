@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../core/theme/app_theme.dart';
 import '../../ui/screens/assessed_buildings_screen.dart';
+import '../../ui/screens/assign_role_screen.dart';
 import '../../ui/screens/building_registry_1_screen.dart ';
 import '../../ui/screens/building_registry_2_screen.dart';
 import '../../ui/screens/building_registry_3_screen.dart';
@@ -15,6 +15,7 @@ import '../../ui/screens/profile_admin_screen.dart';
 import '../../ui/screens/profile_page.dart';
 import '../../ui/screens/recovery_password.dart';
 import '../../ui/screens/register_screen.dart';
+import '../../ui/screens/user_list_screen.dart';
 
 void main() async {
   await Supabase.initialize(
@@ -33,11 +34,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SismosApp',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
+      //theme: AppTheme.light(),
       initialRoute: '/', // 👈 Pantalla inicial
       routes: {
         '/': (_) => const LoginScreen(),
         '/assessed': (_) => const AssessedBuildingsPage(),
+        //'/roles/assign': (_) => const AssignRoleScreen(),
         '/buildingRegistry1': (_) => const BuildingRegistry1Screen(),
         '/buildingRegistry2': (_) => const BuildingRegistry2Screen(),
         '/buildingRegistry3': (_) => const BuildingRegistry3Screen(),
@@ -50,7 +52,7 @@ class MyApp extends StatelessWidget {
         '/profile': (_) => const ProfilePage(),
         '/register': (context) => const RegisterScreen(),
         '/recovery': (context) => const RecoveryPasswordScreen(),
-
+        '/userList': (context) => const UserListScreen(),
       },
     );
   }

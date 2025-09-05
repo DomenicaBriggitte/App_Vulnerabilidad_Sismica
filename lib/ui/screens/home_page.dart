@@ -1,19 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import 'buildings_screen.dart';
 import 'assessed_buildings_screen.dart';
 import 'profile_admin_screen.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Recibimos los argumentos pasados desde login_screen
-    final args = ModalRoute.of(context)!.settings.arguments as Map?;
-    final userId = args?['userId'];
-    final userName = args?['userName'] ?? 'Usuario';
+  State<HomePage> createState() => _HomePageState();
+}
 
+class _HomePageState extends State<HomePage> {
+  String _userName = 'Usuario';
+  String? _userId;
+  String? _token;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('userName') ?? 'Usuario';
+      _userId = prefs.getString('userId');
+      _token = prefs.getString('accessToken');
+    });
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -23,14 +51,7 @@ class HomePage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              // Cerrar sesión y volver al login
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/',
-                    (route) => false,
-              );
-            },
+            onPressed: _logout,
           ),
         ],
       ),
@@ -40,7 +61,7 @@ class HomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hola, $userName',
+              'Hola, $_userName',
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -58,9 +79,7 @@ class HomePage extends StatelessWidget {
                       () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const BuildingsScreen(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const BuildingsScreen()),
                     );
                   },
                 ),
@@ -71,9 +90,7 @@ class HomePage extends StatelessWidget {
                       () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const AssessedBuildingsPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const AssessedBuildingsPage()),
                     );
                   },
                 ),
@@ -89,20 +106,20 @@ class HomePage extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.home),
-              onPressed: () {
-                // Ya estamos en home
-              },
+              onPressed: () {},
               color: AppColors.primary,
             ),
             IconButton(
               icon: const Icon(Icons.person),
               onPressed: () {
-                // Navegar a perfil con userId
-                if (userId != null) {
+                if (_userId != null && _token != null) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ProfileAdminScreen(userId: userId),
+                      builder: (context) => ProfileAdminScreen(
+                        userId: _userId,
+                        token: _token,
+                      ),
                     ),
                   );
                 }
@@ -126,9 +143,7 @@ class HomePage extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.text,
-            ),
+            style: const TextStyle(color: AppColors.text),
           ),
         ],
       ),
