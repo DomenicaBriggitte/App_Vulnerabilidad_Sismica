@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
-import 'edit_profile_screen.dart'; // Importar la nueva pantalla
+import 'edit_profile_screen.dart';
 
 class ProfileAdminScreen extends StatefulWidget {
   final String? userId;

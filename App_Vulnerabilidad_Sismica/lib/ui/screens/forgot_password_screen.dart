@@ -14,7 +14,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   // Alineado al diccionario (Tokens de recuperación/Usuarios)
   final TextEditingController email = TextEditingController();
   String? telefono; //  (VARCHAR(20))
-
   final _formKey = GlobalKey<FormState>();
 
   bool _isValidPhone(String? p) {

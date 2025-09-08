@@ -15,14 +15,11 @@ class BuildingRegistry1Screen extends StatefulWidget {
 
 class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
   final _formKey = GlobalKey<FormState>();
-
   final nombreController = TextEditingController();
   final direccionController = TextEditingController();
   final codigoPostalController = TextEditingController();
-
   File? _foto;
   File? _grafico;
-
   final supabase = Supabase.instance.client;
   int _selectedIndex = 0;
 

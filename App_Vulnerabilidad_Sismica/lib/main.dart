@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/screens/assessed_buildings_screen.dart';
-import '../../ui/screens/assign_role_screen.dart';
 import '../../ui/screens/building_registry_1_screen.dart ';
 import '../../ui/screens/building_registry_2_screen.dart';
 import '../../ui/screens/building_registry_3_screen.dart';

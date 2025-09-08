@@ -61,7 +61,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       print('Datos a enviar: $userData');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;

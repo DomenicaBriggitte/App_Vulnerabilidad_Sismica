@@ -28,7 +28,7 @@ class _RecoveryPasswordScreenState extends State<RecoveryPasswordScreen> {
       // Aquí puedes agregar la lógica para enviar el password_hash al backend (API de recuperación)
       // Los datos a enviar serían:
       // {
-      //   "password_hash": _passwordHash.text, // Este valor será hasheado en el backend
+      // "password_hash": _passwordHash.text, // Este valor será hasheado en el backend
       // }
     }
   }

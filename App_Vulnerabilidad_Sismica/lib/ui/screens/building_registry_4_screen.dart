@@ -52,7 +52,8 @@ class _BuildingRegistry4ScreenState extends State<BuildingRegistry4Screen> {
   String? _tipoSeleccionado;
   final List<String> _tipoOpciones = [
     "Asamblea", "Comercial", "Servicios Em.", "Industria", "Oficina", "Escuela",
-    "Almacén", "Residencial", "Historico", "Albergue", "Gubernamentas", "Herramientas", "Almacen", "Otros"
+    "Almacén", "Residencial", "Historico", "Albergue", "Gubernamentas",
+    "Herramientas", "Almacen", "Otros"
   ];
 
   void _siguiente() {

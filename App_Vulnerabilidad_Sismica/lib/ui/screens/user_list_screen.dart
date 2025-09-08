@@ -29,7 +29,6 @@ class _UserListScreenState extends State<UserListScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken') ?? '';
-
       final response = await http.get(
         Uri.parse('http://192.168.100.4:3000/users'),
         headers: {

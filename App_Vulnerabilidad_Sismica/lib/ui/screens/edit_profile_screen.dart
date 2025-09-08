@@ -174,7 +174,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         updateData['telefono'] = _telefonoController.text.trim();
       }
 
-      // TODO: Implementar subida de imagen si es necesario
       if (_selectedImage != null) {
         // Aquí deberías implementar la lógica para subir la imagen
         // Por ejemplo, usando multipart/form-data o un servicio de storage

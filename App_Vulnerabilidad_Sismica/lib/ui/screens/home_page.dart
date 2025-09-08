@@ -77,8 +77,7 @@ class _HomePageState extends State<HomePage> {
                   'Edificios registrados',
                   'https://cdn-icons-png.flaticon.com/512/1441/1441359.png',
                       () {
-                    Navigator.push(
-                      context,
+                    Navigator.push( context,
                       MaterialPageRoute(builder: (context) => const BuildingsScreen()),
                     );
                   },

@@ -25,7 +25,6 @@ class BuildingRegistry2Screen extends StatefulWidget {
 
 class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
   final _formKey = GlobalKey<FormState>();
-
   final otrasIdentificacionesController = TextEditingController();
   final usoController = TextEditingController();
   final latitudController = TextEditingController();
