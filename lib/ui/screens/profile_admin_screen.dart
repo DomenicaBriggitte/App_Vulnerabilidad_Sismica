@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
+import 'edit_profile_screen.dart'; // Importar la nueva pantalla
 
 class ProfileAdminScreen extends StatefulWidget {
   final String? userId;
@@ -128,6 +129,46 @@ class _ProfileAdminScreenState extends State<ProfileAdminScreen> {
 
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    }
+  }
+
+  Future<void> _navigateToEditProfile() async {
+    // Obtener userId y token actuales
+    String? userId = widget.userId;
+    String? token = widget.token;
+
+    if (userId == null || token == null) {
+      final prefs = await SharedPreferences.getInstance();
+      userId = prefs.getString('userId');
+      token = prefs.getString('accessToken');
+    }
+
+    if (userId == null || token == null || _userData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No se puede acceder a editar perfil')),
+      );
+      return;
+    }
+
+    // Navegar a la pantalla de editar perfil
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          userId: userId,
+          token: token,
+          userData: _userData,
+        ),
+      ),
+    );
+
+    // Si el resultado es true, significa que hubo cambios, recargar los datos
+    if (result == true) {
+      setState(() {
+        _loading = true;
+        _errorMessage = null;
+      });
+      _fetchUser();
     }
   }
 
@@ -302,7 +343,7 @@ class _ProfileAdminScreenState extends State<ProfileAdminScreen> {
               ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: _navigateToEditProfile, // ✅ Conectar con la nueva pantalla
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gray500,
               ),

@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/services/auth_service.dart';
+import 'package:http/http.dart' as http;
+import 'home_page.dart';
+import 'home_admin_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
-import '../widgets/connection_test_android.dart';
 import '../widgets/fields.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,75 +28,81 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ✅ LOGIN integrado con AuthService, retry y SharedPreferences
   Future<void> _loginBackend() async {
+    final String apiUrl = "http://192.168.100.4:3000/auth/login";
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
 
     try {
-      // ✅ Usar AuthService con retry automático
-      final response = await AuthService.login(
-        email: email.text.trim(),
-        password: password.text.trim(),
-        maxRetries: 2, // Hasta 2 intentos para manejar "Connection reset by peer"
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email.text.trim(),
+          "password": password.text.trim(),
+        }),
       );
 
-      if (response.success) {
-        // ✅ Login exitoso - Guardar datos en SharedPreferences
-        final token = response.token ?? '';
-        final userId = response.userId?.toString() ?? '';
-        final nombre = 'nombre'; // Por defecto, ya que AuthResponse no incluye nombre
+      final data = jsonDecode(response.body);
+      debugPrint('Login response raw: ${response.body}');
+      debugPrint('Login response parsed: $data');
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        // 🔹 Manejo seguro del token
+        final tokenField = data['token'];
+        final token = tokenField is Map ? tokenField['access'] ?? '' : tokenField.toString();
+
+        final userId = data['userId']?.toString() ?? '';
+        final userName = (data['nombre'] ?? 'Usuario').toString();
+        final userRole = (data['rol'] ?? 'user').toString(); // 🔹 OBTENEMOS EL ROL
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('accessToken', token);
         await prefs.setString('userId', userId);
-        await prefs.setString('nombre', nombre);
+        await prefs.setString('userName', userName);
+        await prefs.setString('userRole', userRole); // 🔹 GUARDAMOS EL ROL
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response.message),
-              backgroundColor: Colors.green,
-            ),
+        debugPrint('🔍 Rol del usuario: $userRole');
+
+        // 🔹 REDIRIGIR SEGÚN EL ROL
+        if (userRole == 'admin') {
+          // Si es admin, ir a home_admin_screen.dart
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/homeAdmin',
+                (route) => false,
+            arguments: {'userId': userId, 'userName': userName, 'token': token},
           );
-
-          // Navegar a home con argumentos
-          Navigator.pushNamed(
+        } else {
+          // Si no es admin, ir a home_page.dart
+          Navigator.pushNamedAndRemoveUntil(
             context,
             '/home',
-            arguments: {
-              'userId': userId,
-              'nombre': nombre,
-              'token': token,
-            },
+                (route) => false,
+            arguments: {'userId': userId, 'userName': userName, 'token': token},
           );
         }
       } else {
-        // ❌ Login falló
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response.error ?? 'Error en el login'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        // Manejo de errores del backend
+        String message = 'Error desconocido';
+        if (data['error'] != null) {
+          if (data['error'] is Map && data['error']['message'] != null) {
+            message = data['error']['message'];
+          } else if (data['error'] is String) {
+            message = data['error'];
+          }
         }
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $message')));
       }
     } catch (e) {
-      // ❌ Error inesperado
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al conectar con el servidor: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al conectar con el servidor: $e')),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      setState(() => _loading = false);
     }
   }
 
@@ -112,33 +120,19 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'SismosApp',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: AppColors.text,
-                    ),
-                  ),
+                  Text('SismosApp', style: textTheme.titleMedium?.copyWith(color: AppColors.text)),
                   const SizedBox(height: 16),
                   const Center(child: AppLogo()),
                   const SizedBox(height: 24),
-                  const ConnectionTestAndroid(),
-                  const SizedBox(height: 16),
                   Center(
-                    child: Text(
-                      'Iniciar sesión',
-                      style: textTheme.titleLarge?.copyWith(
-                        color: AppColors.text,
-                      ),
-                    ),
+                    child: Text('Iniciar sesión', style: textTheme.titleLarge?.copyWith(color: AppColors.text)),
                   ),
                   const SizedBox(height: 6),
                   Center(
                     child: Text(
                       'Ingrese su correo y su contraseña para iniciar sesión',
                       textAlign: TextAlign.center,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: AppColors.gray500,
-                      ),
+                      style: textTheme.bodyMedium?.copyWith(color: AppColors.gray500),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -154,7 +148,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              Navigator.pushNamed(context, '/forgot');
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/forgot',
+                                    (Route<dynamic> route) => false,
+                              );
                             },
                             child: const Text('¿Olvidó su contraseña?'),
                           ),
@@ -181,14 +178,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              '¿Aún no tienes una cuenta? ',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: const Color.fromARGB(255, 94, 94, 94),
-                              ),
+                              '¿Aún no tienes una cuenta?',
+                              style: textTheme.bodyMedium?.copyWith(color: AppColors.text),
                             ),
                             TextButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, '/register');
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/register',
+                                      (Route<dynamic> route) => false,
+                                );
                               },
                               child: Text(
                                 'Registrarse',
