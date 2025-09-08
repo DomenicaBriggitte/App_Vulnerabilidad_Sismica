@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_3_screen.dart';
 import 'home_page.dart';
+import 'profile_page.dart';
 
 class BuildingRegistry2Screen extends StatefulWidget {
   final String nombre;
@@ -25,6 +26,7 @@ class BuildingRegistry2Screen extends StatefulWidget {
 
 class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
   final _formKey = GlobalKey<FormState>();
+
   final otrasIdentificacionesController = TextEditingController();
   final usoController = TextEditingController();
   final latitudController = TextEditingController();

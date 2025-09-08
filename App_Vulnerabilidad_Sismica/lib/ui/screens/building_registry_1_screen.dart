@@ -5,6 +5,8 @@ import 'package:mime/mime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_2_screen.dart';
+import 'home_page.dart';
+import 'profile_page.dart';
 
 class BuildingRegistry1Screen extends StatefulWidget {
   const BuildingRegistry1Screen({super.key});
@@ -15,11 +17,14 @@ class BuildingRegistry1Screen extends StatefulWidget {
 
 class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
   final _formKey = GlobalKey<FormState>();
+
   final nombreController = TextEditingController();
   final direccionController = TextEditingController();
   final codigoPostalController = TextEditingController();
+
   File? _foto;
   File? _grafico;
+
   final supabase = Supabase.instance.client;
   int _selectedIndex = 0;
 

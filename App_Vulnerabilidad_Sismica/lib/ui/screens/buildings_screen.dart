@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/ui/screens/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'home_page.dart';
 import '../../core/theme/app_colors.dart';
+import '../../ui/screens/building_registry_1_screen.dart';
 
 class BuildingsScreen extends StatefulWidget {
   const BuildingsScreen({super.key});

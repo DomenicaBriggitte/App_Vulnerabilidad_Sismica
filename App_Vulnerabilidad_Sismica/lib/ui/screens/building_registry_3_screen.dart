@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/screens/assessed_buildings_screen.dart';
+import '../../ui/screens/profile_page.dart';
 import '../../ui/screens/home_page.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_4_screen.dart';
@@ -46,8 +47,10 @@ class _BuildingRegistry3ScreenState extends State<BuildingRegistry3Screen> {
   final areaController = TextEditingController();
   final anioConstruccionController = TextEditingController();
   final anioAmpliacionController = TextEditingController();
+
   bool _ampliacionSi = false;
   String? _verificacionSeleccionada;
+
   final List<String> _verificacionOpciones = ["REAL", "EST", "DNK"];
   int _selectedIndex = 0;
   int currentYear = DateTime.now().year;

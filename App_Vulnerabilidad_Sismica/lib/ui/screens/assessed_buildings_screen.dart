@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_colors.dart'; // 👈 importar AppColors
 
 class AssessedBuildingsPage extends StatefulWidget {
   const AssessedBuildingsPage({super.key});
