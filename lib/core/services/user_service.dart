@@ -25,7 +25,7 @@ class UserService {
         DatabaseService.setAuthToken(token);
 
         // Usar DatabaseService para hacer la petición
-        final response = await DatabaseService.get<dynamic>( // ✅ Cambio aquí
+        final response = await DatabaseService.get<dynamic>(
           '${DatabaseEndpoints.user}/$userId',
           requiresAuth: true,
         );
@@ -33,7 +33,7 @@ class UserService {
         print('UserService.getUserById - Attempt: $attempts, Success: ${response.success}');
 
         if (response.success && response.data != null) {
-          // ✅ Manejo seguro de tipos de respuesta
+          // Manejo seguro de tipos de respuesta
           Map<String, dynamic>? userData;
 
           try {
@@ -225,8 +225,9 @@ class UserService {
         // Establecer el token de autenticación
         DatabaseService.setAuthToken(token);
 
-        final response = await DatabaseService.get<dynamic>( // ✅ Cambio aquí
-          '${DatabaseEndpoints.user}/inspectors',
+        // Usar el endpoint general /users
+        final response = await DatabaseService.get<dynamic>(
+          DatabaseEndpoints.user,
           requiresAuth: true,
         );
 
@@ -235,7 +236,7 @@ class UserService {
         if (response.success && response.data != null) {
           List<dynamic> usersData = [];
 
-          // ✅ Manejo seguro de tipos de respuesta
+          // Manejo seguro de tipos de respuesta
           try {
             if (response.data is String) {
               final parsedData = json.decode(response.data as String);
@@ -324,8 +325,9 @@ class UserService {
         // Establecer el token de autenticación
         DatabaseService.setAuthToken(token);
 
-        final response = await DatabaseService.get<dynamic>( // ✅ Cambio aquí
-          '${DatabaseEndpoints.user}/inspectors',
+        // Usar el endpoint general /users
+        final response = await DatabaseService.get<dynamic>(
+          DatabaseEndpoints.user,
           requiresAuth: true,
         );
 
@@ -334,7 +336,7 @@ class UserService {
         if (response.success && response.data != null) {
           List<dynamic> usersData = [];
 
-          // ✅ Manejo seguro de tipos de respuesta
+          // Manejo seguro de tipos de respuesta
           try {
             if (response.data is String) {
               final parsedData = json.decode(response.data as String);
@@ -370,7 +372,7 @@ class UserService {
             }
           }
 
-          // Convertir a lista de UserData - SIN filtrar por rol
+          // Convertir a lista de UserData - SIN filtrar por rol (excepto admins)
           final users = usersData
               .map((userData) => UserData.fromJson(userData as Map<String, dynamic>))
               .where((user) => user.rol.toLowerCase() != 'admin') // Excluir admins
@@ -399,6 +401,105 @@ class UserService {
 
       } catch (e) {
         print('Error en getAllUsers attempt $attempts: $e');
+        if (attempts >= maxRetries) {
+          return UsersListResponse.error('Error inesperado: $e');
+        }
+        await Future.delayed(Duration(seconds: attempts));
+      }
+    }
+
+    return UsersListResponse.error('Error después de $maxRetries intentos');
+  }
+
+  /// Obtener usuarios por rol específico - método adicional
+  static Future<UsersListResponse> getUsersByRole({
+    required String token,
+    required String role,
+    int maxRetries = 2,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    int attempts = 0;
+
+    while (attempts < maxRetries) {
+      try {
+        attempts++;
+
+        // Establecer el token de autenticación
+        DatabaseService.setAuthToken(token);
+
+        // Usar el endpoint byRole específico
+        final response = await DatabaseService.get<dynamic>(
+          '${DatabaseEndpoints.user}/byRole/$role',
+          requiresAuth: true,
+        );
+
+        print('UserService.getUsersByRole - Attempt: $attempts, Role: $role, Success: ${response.success}');
+
+        if (response.success && response.data != null) {
+          List<dynamic> usersData = [];
+
+          // Manejo seguro de tipos de respuesta
+          try {
+            if (response.data is String) {
+              final parsedData = json.decode(response.data as String);
+              if (parsedData is List<dynamic>) {
+                usersData = parsedData;
+              } else if (parsedData is Map<String, dynamic>) {
+                if (parsedData.containsKey('users')) {
+                  usersData = parsedData['users'] as List<dynamic>;
+                } else if (parsedData.containsKey('data')) {
+                  usersData = parsedData['data'] as List<dynamic>;
+                }
+              }
+            } else if (response.data is List<dynamic>) {
+              usersData = response.data as List<dynamic>;
+            } else if (response.data is Map<String, dynamic>) {
+              final dataMap = response.data as Map<String, dynamic>;
+              if (dataMap.containsKey('users')) {
+                usersData = dataMap['users'] as List<dynamic>;
+              } else if (dataMap.containsKey('data')) {
+                usersData = dataMap['data'] as List<dynamic>;
+              }
+            }
+          } catch (parseError) {
+            print('Error parsing response data: $parseError');
+            if (attempts >= maxRetries) {
+              return UsersListResponse.error('Error procesando respuesta del servidor: $parseError');
+            }
+            if (attempts < maxRetries) {
+              await Future.delayed(Duration(seconds: attempts));
+              continue;
+            }
+          }
+
+          // Convertir a lista de UserData
+          final users = usersData
+              .map((userData) => UserData.fromJson(userData as Map<String, dynamic>))
+              .toList();
+
+          return UsersListResponse.success(
+            users,
+            message: 'Lista de usuarios con rol $role obtenida correctamente',
+          );
+        } else {
+          // Si es un error de cliente (4xx), no reintentar
+          if (response.statusCode != null && response.statusCode! >= 400 && response.statusCode! < 500) {
+            return UsersListResponse.error(_getErrorMessage(response));
+          }
+
+          // Para otros errores, reintentar
+          if (attempts >= maxRetries) {
+            return UsersListResponse.error(_getErrorMessage(response));
+          }
+        }
+
+        // Esperar antes del siguiente intento
+        if (attempts < maxRetries) {
+          await Future.delayed(Duration(seconds: attempts));
+        }
+
+      } catch (e) {
+        print('Error en getUsersByRole attempt $attempts: $e');
         if (attempts >= maxRetries) {
           return UsersListResponse.error('Error inesperado: $e');
         }
