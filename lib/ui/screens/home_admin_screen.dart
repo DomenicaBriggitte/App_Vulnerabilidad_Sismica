@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/home_services.dart';
@@ -18,7 +17,7 @@ class HomeAdminScreen extends StatefulWidget {
 
 class _HomeAdminScreenState extends State<HomeAdminScreen> {
   // State variables
-  String _userName = 'Administrador';
+  String _userName = 'Usuario';
   String? _userId;
   String? _token;
   String? _userRole;
@@ -44,7 +43,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         _errorMessage = null;
       });
 
-      debugPrint('Admin - Datos cargados de SharedPreferences:');
+      debugPrint('👑 Admin - Datos cargados de SharedPreferences:');
       debugPrint('  - userName: $_userName');
       debugPrint('  - userId: $_userId');
       debugPrint('  - userRole: $_userRole');

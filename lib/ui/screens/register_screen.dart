@@ -1,13 +1,5 @@
 import 'package:flutter/material.dart';
-<<<<<<< Updated upstream
-import '../../core/theme/app_colors.dart';
-import '../widgets/app_logo.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-<<<<<<< Updated upstream
-=======
-import 'package:intl_phone_field/intl_phone_field.dart';
-=======
->>>>>>> Stashed changes
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
@@ -15,13 +7,10 @@ import '../../core/services/register_service.dart';
 import '../../data/models/register_response.dart';
 import '../widgets/passwordstreng.dart';
 import '../widgets/success_registration_dialog.dart';
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
@@ -29,33 +18,6 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   // Form and Controllers
   final _formKey = GlobalKey<FormState>();
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  final _username = TextEditingController();
-  final _role = TextEditingController();
-  final _email = TextEditingController();
-  final _phone = TextEditingController();
-  final _password = TextEditingController();
-  final _confirmPassword = TextEditingController();
-
-  @override
-  void dispose() {
-    _email.dispose();
-    _phone.dispose();
-    _password.dispose();
-    _confirmPassword.dispose();
-    super.dispose();
-  }
-
-  void _fakeLogin() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login (UI demo).')));
-    }
-  }
-
-=======
   final _cedulaController = TextEditingController();
   final _nombreController = TextEditingController();
   final _emailController = TextEditingController();
@@ -103,55 +65,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-=======
-  final _cedulaController = TextEditingController();
-  final _nombreController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _telefonoController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-
-  // State variables
-  bool _isLoading = false;
-  bool _isCheckingAvailability = false;
-  bool _passwordTouched = false;
-  bool _cedulaTouched = false;
-  bool _nombreTouched = false;
-  bool _emailTouched = false;
-  bool _telefonoTouched = false;
-  bool _confirmPasswordTouched = false;
-  String _completePhoneNumber = '';
-  String? _usernameError;
-  String? _emailError;
-  String? _passwordError;
-  String _selectedRole = 'inspector'; // Valor por defecto
-
-  // Constants - Ajustados según el servidor
-  static const int _cedulaLength = 10;
-  static const int _minNameLength = 5;
-  static const int _maxNameLength = 100;
-  static const int _maxEmailLength = 150;
-  static const int _minPasswordLength = 6;
-
-  // Roles disponibles
-  static const Map<String, String> _availableRoles = {
-    'admin': 'Administrador',
-    'inspector': 'Inspector',
-    'ayudante': 'Ayudante',
-  };
-
-  @override
-  void dispose() {
-    _cedulaController.dispose();
-    _nombreController.dispose();
-    _emailController.dispose();
-    _telefonoController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
->>>>>>> Stashed changes
   // Validation Methods
   Future<void> _checkUsernameAvailability(String username) async {
     if (username.length < _minNameLength) {
@@ -579,6 +492,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: _passwordController,
             labelText: 'Contraseña',
             showStrengthIndicator: true,
+            onTap: () {},
           ),
           const SizedBox(height: 4),
         ],
@@ -722,81 +636,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     return null;
   }
-<<<<<<< Updated upstream
-=======
-
-  String? _validateNombre(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'El nombre es requerido';
-    }
-    if (value.length < _minNameLength) {
-      return 'El nombre debe tener al menos $_minNameLength caracteres';
-    }
-    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$').hasMatch(value)) {
-      return 'Solo se permiten letras y espacios';
-    }
-    if (value.length > _maxNameLength) {
-      return 'El nombre no puede exceder $_maxNameLength caracteres';
-    }
-    return null;
-  }
-
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'El correo es requerido';
-    }
-    if (!_isValidEmail(value)) {
-      return 'El correo no es válido';
-    }
-    if (value.length > _maxEmailLength) {
-      return 'El correo no puede exceder $_maxEmailLength caracteres';
-    }
-    return null;
-  }
-
-  String? _validatePhone(phone) {
-    final phoneNumber = phone?.number ?? '';
-    if (phoneNumber.isEmpty) {
-      return 'El número de teléfono es requerido';
-    }
-    if (!RegExp(r'^[0-9]+$').hasMatch(phoneNumber)) {
-      return 'Solo se permiten números';
-    }
-    if (phoneNumber.length > 10) {
-      return 'El número de teléfono no debe superar 10 dígitos';
-    }
-    if (phoneNumber.length < 7) {
-      return 'Número de teléfono muy corto';
-    }
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'La contraseña es requerida';
-    }
-    if (value.length < _minPasswordLength) {
-      return 'La contraseña debe tener al menos $_minPasswordLength caracteres';
-    }
-    if (!RegExp(r'[A-Z]').hasMatch(value)) {
-      return 'La contraseña debe tener al menos una letra mayúscula';
-    }
-    if (!RegExp(r'[0-9]').hasMatch(value)) {
-      return 'La contraseña debe tener al menos un número';
-    }
-    return null;
-  }
-
-  String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Confirme su contraseña';
-    }
-    if (value != _passwordController.text) {
-      return 'Las contraseñas no coinciden';
-    }
-    return null;
-  }
->>>>>>> Stashed changes
 
   String? _validateNombre(String? value) {
     if (value == null || value.isEmpty) {
@@ -870,7 +709,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
->>>>>>> Stashed changes
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -907,176 +745,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Form(
                     key: _formKey,
                     child: Column(
                       children: [
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                        // Campo de usuario. Enviar como 'username' al backend (API de registro)
-                        TextFormField(
-                          controller: _username,
-                          decoration: const InputDecoration(
-                            labelText: 'Usuario',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Ingrese un usuario';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Campo de selección de rol (enviar como role al backend)
-                        // Campo de selección de rol. Enviar como 'role' al backend (API de registro)
-                        DropdownButtonFormField<String>(
-                          value: _role.text.isNotEmpty ? _role.text : null,
-                          decoration: const InputDecoration(
-                            labelText: 'Rol',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'admin',
-                              child: Text(
-                                'Admin',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'inspector',
-                              child: Text(
-                                'Inspector',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'ayudante',
-                              child: Text(
-                                'Ayudante',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'cliente',
-                              child: Text(
-                                'Cliente',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            setState(() {
-                              _role.text = value ?? '';
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Seleccione un rol';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Campo de correo electrónico. Enviar como 'email' al backend (API de registro)
-                        TextFormField(
-                          controller: _email,
-                          decoration: const InputDecoration(
-                            labelText: 'Correo electrónico',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Ingrese un correo electrónico';
-                            }
-                            if (!RegExp(
-                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                            ).hasMatch(value)) {
-                              return 'Ingrese un correo válido';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Campo de teléfono con país. Enviar como 'phone' al backend (API de registro)
-                        IntlPhoneField(
-                          controller: _phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Teléfono',
-                            border: OutlineInputBorder(),
-                          ),
-                          initialCountryCode: 'EC',
-                          onChanged: (phone) {
-                            // phone.completeNumber contiene el número completo con país
-                          },
-                          validator: (value) {
-                            final phoneNumber = value?.number ?? '';
-                            if (phoneNumber.isEmpty) {
-                              return 'Ingrese su número de teléfono';
-                            }
-                            if (!RegExp(r'^[0-9]+$').hasMatch(phoneNumber)) {
-                              return 'Solo se permiten números';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Campo de contraseña. Enviar como 'password' al backend (API de registro)
-                        TextFormField(
-                          controller: _password,
-                          decoration: const InputDecoration(
-                            labelText: 'Contraseña',
-                            border: OutlineInputBorder(),
-                          ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Ingrese una contraseña';
-                            }
-                            // Debe tener al menos 8 caracteres, un símbolo y un carácter especial
-                            if (value.length < 8) {
-                              return 'Debe tener al menos 8 caracteres';
-                            }
-                            if (!RegExp(r'[!@#\$&*~]').hasMatch(value)) {
-                              return 'Debe contener al menos un símbolo (!@#\$&*~)';
-                            }
-                            if (!RegExp(r'[A-Za-z0-9]').hasMatch(value)) {
-                              return 'Debe contener letras y números';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Campo de confirmar contraseña. Solo para validación local, no se envía al backend
-                        TextFormField(
-                          controller: _confirmPassword,
-                          decoration: const InputDecoration(
-                            labelText: 'Confirmar contraseña',
-                            border: OutlineInputBorder(),
-                          ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Confirme su contraseña';
-                            }
-                            if (value != _password.text) {
-                              return 'Las contraseñas no coinciden';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // ...existing code...
-                        // Botón para enviar datos al backend (API de registro)
-                        ElevatedButton(
-                          onPressed:
-                              _fakeLogin, // Aquí se debe conectar la lógica de registro con el backend
-                          child: const Text('Registrar'),
-                        ),
-=======
                         _buildCedulaField(),
                         const SizedBox(height: 12),
                         _buildNombreField(),
@@ -1087,27 +759,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 12),
                         _buildPasswordField(),
                         const SizedBox(height: 12),
-=======
-                        _buildCedulaField(),
-                        const SizedBox(height: 12),
-                        _buildNombreField(),
-                        const SizedBox(height: 12),
-                        _buildEmailField(),
-                        const SizedBox(height: 12),
-                        _buildPhoneField(),
-                        const SizedBox(height: 12),
-                        _buildPasswordField(),
-                        const SizedBox(height: 12),
->>>>>>> Stashed changes
                         _buildConfirmPasswordField(),
                         const SizedBox(height: 24),
                         _buildRegisterButton(),
                         const SizedBox(height: 16),
                         _buildLoginLink(textTheme),
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
                       ],
                     ),
                   ),

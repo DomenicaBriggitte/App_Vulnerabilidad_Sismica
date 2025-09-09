@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/home_services.dart';
->>>>>>> Stashed changes
-=======
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/services/auth_service.dart';
-import '../../core/services/home_services.dart';
->>>>>>> Stashed changes
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/connection_test_android.dart';
@@ -18,29 +9,24 @@ import '../widgets/fields.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
+  bool _loading = false;
 
   @override
   void dispose() {
-    _email.dispose();
-    _password.dispose();
+    email.dispose();
+    password.dispose();
     super.dispose();
   }
 
-<<<<<<< Updated upstream
-  void _fakeLogin() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login (UI demo).')));
-=======
   Future<void> _loginBackend() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -168,16 +154,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _loading = false);
       }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -218,33 +201,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        AppEmailField(controller: _email),
+                        AppEmailField(controller: email),
                         const SizedBox(height: 12),
-                        AppPasswordField(controller: _password),
+                        AppPasswordField(controller: password),
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-<<<<<<< Updated upstream
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/forgot'),
-=======
                             onPressed: () {
                               Navigator.pushNamed(context, '/forgot');
                             },
->>>>>>> Stashed changes
                             child: const Text('¿Olvidó su contraseña?'),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: _fakeLogin,
-                          child: const Text('iniciar sesión'),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _loading ? null : _loginBackend,
+                            child: _loading
+                                ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                                : const Text('Iniciar sesión'),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Row(
