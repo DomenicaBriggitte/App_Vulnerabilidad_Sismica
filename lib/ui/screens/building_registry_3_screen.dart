@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../ui/screens/assessed_buildings_screen.dart';
-import '../../ui/screens/profile_page.dart';
-import '../../ui/screens/home_page.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_4_screen.dart';
 
