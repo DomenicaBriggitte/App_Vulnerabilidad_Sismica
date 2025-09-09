@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/screens/assessed_buildings_screen.dart';
-import '../../ui/screens/assign_role_screen.dart';
 import '../../ui/screens/building_registry_1_screen.dart ';
 import '../../ui/screens/building_registry_2_screen.dart';
 import '../../ui/screens/building_registry_3_screen.dart';
 import '../../ui/screens/building_registry_4_screen.dart';
+import '../../ui/screens/building_registry_5_screen.dart';
 import '../../ui/screens/buildings_screen.dart';
 import '../../ui/screens/exten_revis.dart';
 import '../../ui/screens/forgot_password_screen.dart';
@@ -35,15 +35,15 @@ class MyApp extends StatelessWidget {
       title: 'SismosApp',
       debugShowCheckedModeBanner: false,
       //theme: AppTheme.light(),
-      initialRoute: '/', // 👈 Pantalla inicial
+      initialRoute: '/home', // 👈 Pantalla inicial
       routes: {
         '/': (_) => const LoginScreen(),
         '/assessed': (_) => const AssessedBuildingsPage(),
-        //'/roles/assign': (_) => const AssignRoleScreen(),
         '/buildingRegistry1': (_) => const BuildingRegistry1Screen(),
         '/buildingRegistry2': (_) => const BuildingRegistry2Screen(),
         '/buildingRegistry3': (_) => const BuildingRegistry3Screen(),
         '/buildingRegistry4': (_) => const BuildingRegistry4Screen(),
+        '/buildingRegistry5': (_) => const BuildingRegistry5Screen(),
         '/building': (_) => const BuildingsScreen(),
         '/exten': (_) => const ExtensionRevisionPage(),
         '/forgot': (_) => const ForgotPasswordScreen(),
