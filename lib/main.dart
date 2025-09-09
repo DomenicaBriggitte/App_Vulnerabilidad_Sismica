@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import 'core/theme/app_theme.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/forgot_password_screen.dart';
 import 'ui/screens/register_screen.dart';
 import 'ui/screens/recovery_password.dart';
 =======
+=======
+>>>>>>> Stashed changes
 import 'package:flutter_application_1/ui/screens/home_admin_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/screens/assessed_buildings_screen.dart';

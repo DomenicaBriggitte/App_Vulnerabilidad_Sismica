@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/home_services.dart';
+>>>>>>> Stashed changes
 =======
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/auth_service.dart';
@@ -162,6 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _loading = false);
       }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }
   }

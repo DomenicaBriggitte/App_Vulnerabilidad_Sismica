@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+<<<<<<< Updated upstream
 =======
 import 'package:intl_phone_field/intl_phone_field.dart';
+=======
+>>>>>>> Stashed changes
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
@@ -12,6 +15,9 @@ import '../../core/services/register_service.dart';
 import '../../data/models/register_response.dart';
 import '../widgets/passwordstreng.dart';
 import '../widgets/success_registration_dialog.dart';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 class RegisterScreen extends StatefulWidget {
@@ -23,6 +29,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   // Form and Controllers
   final _formKey = GlobalKey<FormState>();
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
   final _username = TextEditingController();
   final _role = TextEditingController();
@@ -96,6 +103,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+=======
+  final _cedulaController = TextEditingController();
+  final _nombreController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _telefonoController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  // State variables
+  bool _isLoading = false;
+  bool _isCheckingAvailability = false;
+  bool _passwordTouched = false;
+  bool _cedulaTouched = false;
+  bool _nombreTouched = false;
+  bool _emailTouched = false;
+  bool _telefonoTouched = false;
+  bool _confirmPasswordTouched = false;
+  String _completePhoneNumber = '';
+  String? _usernameError;
+  String? _emailError;
+  String? _passwordError;
+  String _selectedRole = 'inspector'; // Valor por defecto
+
+  // Constants - Ajustados según el servidor
+  static const int _cedulaLength = 10;
+  static const int _minNameLength = 5;
+  static const int _maxNameLength = 100;
+  static const int _maxEmailLength = 150;
+  static const int _minPasswordLength = 6;
+
+  // Roles disponibles
+  static const Map<String, String> _availableRoles = {
+    'admin': 'Administrador',
+    'inspector': 'Inspector',
+    'ayudante': 'Ayudante',
+  };
+
+  @override
+  void dispose() {
+    _cedulaController.dispose();
+    _nombreController.dispose();
+    _emailController.dispose();
+    _telefonoController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+>>>>>>> Stashed changes
   // Validation Methods
   Future<void> _checkUsernameAvailability(String username) async {
     if (username.length < _minNameLength) {
@@ -666,6 +722,81 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     return null;
   }
+<<<<<<< Updated upstream
+=======
+
+  String? _validateNombre(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'El nombre es requerido';
+    }
+    if (value.length < _minNameLength) {
+      return 'El nombre debe tener al menos $_minNameLength caracteres';
+    }
+    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$').hasMatch(value)) {
+      return 'Solo se permiten letras y espacios';
+    }
+    if (value.length > _maxNameLength) {
+      return 'El nombre no puede exceder $_maxNameLength caracteres';
+    }
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'El correo es requerido';
+    }
+    if (!_isValidEmail(value)) {
+      return 'El correo no es válido';
+    }
+    if (value.length > _maxEmailLength) {
+      return 'El correo no puede exceder $_maxEmailLength caracteres';
+    }
+    return null;
+  }
+
+  String? _validatePhone(phone) {
+    final phoneNumber = phone?.number ?? '';
+    if (phoneNumber.isEmpty) {
+      return 'El número de teléfono es requerido';
+    }
+    if (!RegExp(r'^[0-9]+$').hasMatch(phoneNumber)) {
+      return 'Solo se permiten números';
+    }
+    if (phoneNumber.length > 10) {
+      return 'El número de teléfono no debe superar 10 dígitos';
+    }
+    if (phoneNumber.length < 7) {
+      return 'Número de teléfono muy corto';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'La contraseña es requerida';
+    }
+    if (value.length < _minPasswordLength) {
+      return 'La contraseña debe tener al menos $_minPasswordLength caracteres';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'La contraseña debe tener al menos una letra mayúscula';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'La contraseña debe tener al menos un número';
+    }
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Confirme su contraseña';
+    }
+    if (value != _passwordController.text) {
+      return 'Las contraseñas no coinciden';
+    }
+    return null;
+  }
+>>>>>>> Stashed changes
 
   String? _validateNombre(String? value) {
     if (value == null || value.isEmpty) {
@@ -781,6 +912,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                         // Campo de usuario. Enviar como 'username' al backend (API de registro)
                         TextFormField(
@@ -955,11 +1087,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 12),
                         _buildPasswordField(),
                         const SizedBox(height: 12),
+=======
+                        _buildCedulaField(),
+                        const SizedBox(height: 12),
+                        _buildNombreField(),
+                        const SizedBox(height: 12),
+                        _buildEmailField(),
+                        const SizedBox(height: 12),
+                        _buildPhoneField(),
+                        const SizedBox(height: 12),
+                        _buildPasswordField(),
+                        const SizedBox(height: 12),
+>>>>>>> Stashed changes
                         _buildConfirmPasswordField(),
                         const SizedBox(height: 24),
                         _buildRegisterButton(),
                         const SizedBox(height: 16),
                         _buildLoginLink(textTheme),
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                       ],
                     ),

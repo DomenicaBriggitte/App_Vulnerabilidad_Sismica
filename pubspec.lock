@@ -51,6 +51,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.7.0"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   async:
     dependency: transitive
@@ -174,6 +177,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   flutter:
     dependency: "direct main"
@@ -304,6 +310,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.5"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   google_fonts:
     dependency: "direct main"
@@ -357,7 +366,10 @@ packages:
     source: hosted
     version: "4.1.2"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
   image:
     dependency: "direct main"
     description:
@@ -530,6 +542,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   path:
     dependency: transitive
@@ -612,7 +627,10 @@ packages:
     source: hosted
     version: "2.1.8"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
   posix:
     dependency: transitive
     description:
@@ -861,6 +879,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.5.1"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   vector_math:
     dependency: transitive
@@ -912,6 +933,9 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.14.0"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   xdg_directories:
     dependency: transitive
@@ -922,7 +946,10 @@ packages:
     source: hosted
     version: "1.1.0"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
   xml:
     dependency: transitive
     description:
