@@ -1,27 +1,28 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_3_screen.dart';
-import 'home_page.dart';
-import 'profile_page.dart';
 
 class BuildingRegistry2Screen extends StatefulWidget {
   final String nombre;
   final String direccion;
   final String codigoPostal;
-  final String? fotoUrl;
-  final String? graficoUrl;
+  final File? fotoEdificio;
+  final File? graficoEdificio;
 
   const BuildingRegistry2Screen({
     super.key,
-    this.nombre='',
-    this.direccion='',
-    this.codigoPostal='',
-    this.fotoUrl,
-    this.graficoUrl,
+    this.nombre = '',
+    this.direccion = '',
+    this.codigoPostal = '',
+    this.fotoEdificio,
+    this.graficoEdificio,
   });
 
   @override
-  State<BuildingRegistry2Screen> createState() => _BuildingRegistry2ScreenState();
+  State<BuildingRegistry2Screen> createState() =>
+      _BuildingRegistry2ScreenState();
 }
 
 class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
@@ -55,8 +56,8 @@ class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
             nombre: widget.nombre,
             direccion: widget.direccion,
             codigoPostal: widget.codigoPostal,
-            fotoUrl: widget.fotoUrl,
-            graficoUrl: widget.graficoUrl,
+            fotoEdificio: widget.fotoEdificio,
+            graficoEdificio: widget.graficoEdificio,
             otrasIdentificaciones: otrasIdentificacionesController.text,
             uso: usoController.text,
             latitud: latitudController.text,
@@ -90,7 +91,12 @@ class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
     );
   }
 
-  Widget _labeledTextFormField(String label, TextEditingController controller, {TextInputType? keyboardType, String? Function(String?)? validator}) {
+  Widget _labeledTextFormField(
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -134,19 +140,33 @@ class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
               Expanded(
                 child: ListView(
                   children: [
-                    _labeledTextFormField("Otras identificaciones", otrasIdentificacionesController),
+                    _labeledTextFormField(
+                      "Otras identificaciones",
+                      otrasIdentificacionesController,
+                    ),
                     const SizedBox(height: 16),
 
                     _labeledTextFormField("Uso del edificio", usoController),
                     const SizedBox(height: 16),
 
-                    _labeledTextFormField("Latitud", latitudController, keyboardType: TextInputType.number),
+                    _labeledTextFormField(
+                      "Latitud",
+                      latitudController,
+                      keyboardType: TextInputType.number,
+                    ),
                     const SizedBox(height: 16),
 
-                    _labeledTextFormField("Longitud", longitudController, keyboardType: TextInputType.number),
+                    _labeledTextFormField(
+                      "Longitud",
+                      longitudController,
+                      keyboardType: TextInputType.number,
+                    ),
                     const SizedBox(height: 16),
 
-                    _labeledTextFormField("Nombre del inspector", inspectorController),
+                    _labeledTextFormField(
+                      "Nombre del inspector",
+                      inspectorController,
+                    ),
                     const SizedBox(height: 16),
 
                     // Fecha y Hora en fila horizontal
