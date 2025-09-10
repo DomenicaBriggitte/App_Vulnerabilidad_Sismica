@@ -2,11 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_2_screen.dart';
-import 'home_page.dart';
-import 'profile_page.dart';
 
 class BuildingRegistry1Screen extends StatefulWidget {
   const BuildingRegistry1Screen({super.key});
@@ -25,7 +22,6 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
   File? _foto;
   File? _grafico;
 
-  final supabase = Supabase.instance.client;
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -39,7 +35,32 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
 
   Future<void> _pickFile(bool isFoto) async {
     final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    // Mostrar opciones al usuario
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text("Galería"),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text("Cámara"),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return; // Usuario canceló
+
+    final XFile? pickedFile = await picker.pickImage(source: source);
     if (pickedFile == null) return;
 
     final file = File(pickedFile.path);
@@ -80,19 +101,6 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
     });
   }
 
-  Future<String?> _uploadFile(File file, String name) async {
-    final path = 'edificios/$name';
-    try {
-      await supabase.storage.from('edificios').upload(path, file);
-      return supabase.storage.from('edificios').getPublicUrl(path);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al subir archivo: $e")),
-      );
-      return null;
-    }
-  }
-
   void _siguiente() async {
     if (_formKey.currentState!.validate()) {
       if (_foto == null) {
@@ -102,22 +110,7 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
         return;
       }
 
-      String? fotoUrl;
-      String? graficoUrl;
-
-      if (_foto != null) {
-        fotoUrl = await _uploadFile(
-          _foto!,
-          'foto_${DateTime.now().millisecondsSinceEpoch}.png',
-        );
-      }
-      if (_grafico != null) {
-        graficoUrl = await _uploadFile(
-          _grafico!,
-          'grafico_${DateTime.now().millisecondsSinceEpoch}.png',
-        );
-      }
-
+      // CAMBIADO: Pasar archivos File directamente en lugar de subirlos aquí
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -125,8 +118,9 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
             nombre: nombreController.text,
             direccion: direccionController.text,
             codigoPostal: codigoPostalController.text,
-            fotoUrl: fotoUrl,
-            graficoUrl: graficoUrl,
+            // Pasar archivos File directamente
+            fotoEdificio: _foto,
+            graficoEdificio: _grafico,
           ),
         ),
       );
