@@ -70,12 +70,10 @@ class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
     }
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration() {
     return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.gray500),
       filled: true,
-      fillColor: AppColors.background,
+      fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.gray300, width: 1.5),
@@ -88,7 +86,30 @@ class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+    );
+  }
+
+  Widget _labeledTextFormField(String label, TextEditingController controller, {TextInputType? keyboardType, String? Function(String?)? validator}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          decoration: _inputDecoration(),
+          keyboardType: keyboardType,
+          validator: validator,
+        ),
+      ],
     );
   }
 
@@ -108,60 +129,95 @@ class _BuildingRegistry2ScreenState extends State<BuildingRegistry2Screen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
-              TextFormField(
-                controller: otrasIdentificacionesController,
-                decoration: _inputDecoration("Otras identificaciones"),
+              Expanded(
+                child: ListView(
+                  children: [
+                    _labeledTextFormField("Otras identificaciones", otrasIdentificacionesController),
+                    const SizedBox(height: 16),
+
+                    _labeledTextFormField("Uso del edificio", usoController),
+                    const SizedBox(height: 16),
+
+                    _labeledTextFormField("Latitud", latitudController, keyboardType: TextInputType.number),
+                    const SizedBox(height: 16),
+
+                    _labeledTextFormField("Longitud", longitudController, keyboardType: TextInputType.number),
+                    const SizedBox(height: 16),
+
+                    _labeledTextFormField("Nombre del inspector", inspectorController),
+                    const SizedBox(height: 16),
+
+                    // Fecha y Hora en fila horizontal
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Fecha (mm/dd/yy)",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.text,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: fechaController,
+                                decoration: _inputDecoration(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Hora",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.text,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: horaController,
+                                decoration: _inputDecoration(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: usoController,
-                decoration: _inputDecoration("Uso del edificio"),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: latitudController,
-                decoration: _inputDecoration("Latitud"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: longitudController,
-                decoration: _inputDecoration("Longitud"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: inspectorController,
-                decoration: _inputDecoration("Nombre del inspector"),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: fechaController,
-                decoration: _inputDecoration("Fecha"),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: horaController,
-                decoration: _inputDecoration("Hora"),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _siguiente,
+                  child: const Text(
+                    "Siguiente",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                onPressed: _siguiente,
-                child: const Text(
-                  "Siguiente",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),

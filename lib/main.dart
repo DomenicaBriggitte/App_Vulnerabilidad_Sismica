@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
       title: 'SismosApp',
       debugShowCheckedModeBanner: false,
       //theme: AppTheme.light(),
-      initialRoute: '/home', // 👈 Pantalla inicial
+      initialRoute: '/buildingRegistry2', // 👈 Pantalla inicial
       routes: {
         '/': (_) => const LoginScreen(),
         '/assessed': (_) => const AssessedBuildingsPage(),

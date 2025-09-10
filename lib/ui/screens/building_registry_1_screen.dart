@@ -133,12 +133,10 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
     }
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration() {
     return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.gray500),
       filled: true,
-      fillColor: AppColors.background,
+      fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.gray300, width: 1.5),
@@ -151,7 +149,29 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+    );
+  }
+
+  Widget _labeledTextFormField(String label, TextEditingController controller, String? Function(String?)? validator) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          decoration: _inputDecoration(),
+          validator: validator,
+        ),
+      ],
     );
   }
 
@@ -175,8 +195,16 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
           )
               : const Icon(Icons.image, size: 60, color: AppColors.gray500),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.lightBlue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
           onPressed: () => _pickFile(label == "Foto"),
           child: Text("Subir $label"),
         ),
@@ -200,50 +228,81 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Expanded(
+                child: ListView(
+                  children: [
+                    // Sección de archivos
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        SizedBox(width: 150, child: _previewWidget(_foto, "Foto")),
+                        SizedBox(width: 150, child: _previewWidget(_grafico, "Gráfico")),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Campos de texto con labels arriba
+                    _labeledTextFormField(
+                      "Nombre del edificio",
+                      nombreController,
+                          (v) => v == null || v.isEmpty
+                          ? "Campo obligatorio"
+                          : v.length > 100
+                          ? "Máximo 100 caracteres"
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    _labeledTextFormField(
+                      "Dirección",
+                      direccionController,
+                          (v) => v != null && v.length > 255
+                          ? "Máximo 255 caracteres"
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    _labeledTextFormField(
+                      "Código Postal",
+                      codigoPostalController,
+                          (v) => v != null && v.length > 10
+                          ? "Máximo 10 caracteres"
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+
+              Column(
                 children: [
-                  SizedBox(width: 150, child: _previewWidget(_foto, "Foto")),
-                  SizedBox(width: 150, child: _previewWidget(_grafico, "Gráfico")),
-                ],
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: nombreController,
-                decoration: _inputDecoration("Nombre del edificio"),
-                validator: (v) => v == null || v.isEmpty
-                    ? "Campo obligatorio"
-                    : v.length > 100
-                    ? "Máximo 100 caracteres"
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: direccionController,
-                decoration: _inputDecoration("Dirección"),
-                validator: (v) => v != null && v.length > 255
-                    ? "Máximo 255 caracteres"
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: codigoPostalController,
-                decoration: _inputDecoration("Código Postal"),
-                validator: (v) =>
-                v != null && v.length > 10 ? "Máximo 10 caracteres" : null,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
+                  SizedBox(
+                    width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
+                        backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: _siguiente,
+                      child: const Text(
+                        "Siguiente",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -251,27 +310,15 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
                       onPressed: () {
                         Navigator.pushNamed(context, '/building');
                       },
-                      child: const Text("Cancelar"),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      child: const Text(
+                        "Cancelar",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
-                      onPressed: _siguiente,
-                      child: const Text("Siguiente"),
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
-
             ],
           ),
         ),

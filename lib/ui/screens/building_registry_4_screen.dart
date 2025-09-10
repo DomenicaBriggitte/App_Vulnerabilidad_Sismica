@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
-//import 'building_registry_5_screen.dart';
+import 'building_registry_5_screen.dart';
 
 class BuildingRegistry4Screen extends StatefulWidget {
   final String nombre;
@@ -90,7 +90,30 @@ class _BuildingRegistry4ScreenState extends State<BuildingRegistry4Screen> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const SizedBox()),
+        MaterialPageRoute(
+          builder: (context) => BuildingRegistry5Screen(
+            // Pasar todos los parámetros de las pantallas anteriores
+            nombre: widget.nombre,
+            direccion: widget.direccion,
+            codigoPostal: widget.codigoPostal,
+            uso: widget.uso,
+            latitud: widget.latitud,
+            longitud: widget.longitud,
+            inspector: widget.inspector,
+            fecha: widget.fecha,
+            hora: widget.hora,
+            fotoUrl: widget.fotoUrl,
+            graficoUrl: widget.graficoUrl,
+            pisos: widget.pisos,
+            area: widget.area,
+            anioConstruccion: widget.anioConstruccion,
+            ampliacionSi: widget.ampliacionSi,
+            anioAmpliacion: widget.anioAmpliacion,
+            verificacion: widget.verificacion,
+            ocupacion: _tipoSeleccionado ?? '',
+            unidades: unidadesController.text,
+          ),
+        ),
       );
     }
   }

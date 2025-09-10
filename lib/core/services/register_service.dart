@@ -1,7 +1,5 @@
 import 'dart:io';
-
 import 'package:flutter_application_1/core/services/auth_service.dart';
-
 import '../constants/database_endpoints.dart';
 import 'dart:math';
 import 'database_service.dart';
