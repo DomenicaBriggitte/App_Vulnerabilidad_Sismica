@@ -303,3 +303,22 @@ class DatabaseService {
     return _authToken;
   }
 }
+
+static http.MultipartRequest buildMultipartRequest(String method, Uri uri) {
+    final request = http.MultipartRequest(method, uri);
+    if (_authToken != null) {
+      request.headers['Authorization'] = 'Bearer $_authToken';
+    }
+    return request;
+  }
+
+  static Future<http.MultipartFile> createMultipartFile(File file, String fieldName) async {
+    return await http.MultipartFile.fromPath(fieldName, file.path);
+  }
+
+  static Future<DatabaseResponse<Map<String, dynamic>>> sendMultipartRequest(http.MultipartRequest request) async {
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    return _handleResponse<Map<String, dynamic>>(response);
+  }
+}
