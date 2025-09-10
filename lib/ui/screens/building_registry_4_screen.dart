@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_5_screen.dart';
@@ -12,11 +14,12 @@ class BuildingRegistry4Screen extends StatefulWidget {
   final String inspector;
   final String fecha;
   final String hora;
-  final String? fotoUrl;
-  final String? graficoUrl;
+  final File? fotoEdificio;
+  final File? graficoEdificio;
   final String pisos;
   final String area;
   final String anioConstruccion;
+  final String anioCodigo;
   final bool ampliacionSi;
   final String anioAmpliacion;
   final String verificacion;
@@ -32,11 +35,12 @@ class BuildingRegistry4Screen extends StatefulWidget {
     this.inspector = '',
     this.fecha = '',
     this.hora = '',
-    this.fotoUrl,
-    this.graficoUrl,
+    this.fotoEdificio,
+    this.graficoEdificio,
     this.pisos = '',
     this.area = '',
     this.anioConstruccion = '',
+    this.anioCodigo = '',
     this.ampliacionSi = false,
     this.anioAmpliacion = '',
     this.verificacion = '',
@@ -102,13 +106,14 @@ class _BuildingRegistry4ScreenState extends State<BuildingRegistry4Screen> {
             inspector: widget.inspector,
             fecha: widget.fecha,
             hora: widget.hora,
-            fotoUrl: widget.fotoUrl,
-            graficoUrl: widget.graficoUrl,
+            fotoEdificio: widget.fotoEdificio,
+            graficoEdificio: widget.graficoEdificio,
             pisos: widget.pisos,
             area: widget.area,
             anioConstruccion: widget.anioConstruccion,
             ampliacionSi: widget.ampliacionSi,
             anioAmpliacion: widget.anioAmpliacion,
+            anioCodigo: widget.anioCodigo,
             verificacion: widget.verificacion,
             ocupacion: _tipoSeleccionado ?? '',
             unidades: unidadesController.text,
