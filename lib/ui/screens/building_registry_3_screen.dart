@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'building_registry_4_screen.dart';
@@ -10,8 +12,8 @@ class BuildingRegistry3Screen extends StatefulWidget {
   final String latitud;
   final String longitud;
   final String inspector;
-  final String? fotoUrl;
-  final String? graficoUrl;
+  final File? fotoEdificio;
+  final File? graficoEdificio;
   final String otrasIdentificaciones;
   final String fecha;
   final String hora;
@@ -25,8 +27,8 @@ class BuildingRegistry3Screen extends StatefulWidget {
     this.latitud = "",
     this.longitud = "",
     this.inspector = "",
-    this.fotoUrl,
-    this.graficoUrl,
+    this.fotoEdificio,
+    this.graficoEdificio,
     this.otrasIdentificaciones= "",
     this.fecha= "",
     this.hora= "",
@@ -168,10 +170,11 @@ class _BuildingRegistry3ScreenState extends State<BuildingRegistry3Screen> {
             inspector: widget.inspector,
             fecha: widget.fecha,
             hora: widget.hora,
-            fotoUrl: widget.fotoUrl,
-            graficoUrl: widget.graficoUrl,
+            fotoEdificio: widget.fotoEdificio,
+            graficoEdificio: widget.graficoEdificio,
             pisos: pisosController.text,
             area: areaController.text,
+            anioCodigo: anioCodigoController.text,
             anioConstruccion: anioConstruccionController.text,
             ampliacionSi: _ampliacionSi,
             anioAmpliacion: anioAmpliacionController.text,
@@ -243,6 +246,17 @@ class _BuildingRegistry3ScreenState extends State<BuildingRegistry3Screen> {
                           (value) => setState(() => _anioCodigoVerificacion = value!),
                       keyboardType: TextInputType.number,
                       maxLength: 4,
+                      validator: (v) {
+                        print('Valor ingresado: "$v"'); // <-- para depuración
+                        if (v == null || v.trim().isEmpty) return 'Ingrese un año del código';
+                        final parsed = int.tryParse(v.trim());
+                        print('Valor parseado: $parsed'); // <-- para depuración
+                        if (parsed == null || parsed < 1900 || parsed > DateTime.now().year) {
+                          return 'Ingrese un año del código válido entre 1900 y ${DateTime.now().year}';
+                        }
+                        return null;
+                      },
+
                     ),
                     const SizedBox(height: 20),
 
