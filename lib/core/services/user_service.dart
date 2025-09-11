@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import '../config/database_config.dart';
 import '../../data/models/database_response.dart';
 import '../../data/models/user_response.dart';
@@ -97,7 +98,7 @@ class UserService {
     return UserResponse.error('Error después de $maxRetries intentos');
   }
 
-  /// Actualizar usuario - para EditProfileScreen
+  // MÉTODO ACTUALIZADO EN UserService para updateUser
   static Future<UserResponse> updateUser({
     required String token,
     required String userId,
@@ -109,6 +110,7 @@ class UserService {
     String? currentPassword,
     String? newPassword,
     File? imageFile,
+    bool removeImage = false, // NUEVO: Flag para indicar eliminación de imagen
     int maxRetries = 2,
     Duration timeout = const Duration(seconds: 15),
   }) async {
@@ -146,16 +148,24 @@ class UserService {
           fields['password'] = newPassword.trim();
         }
 
-        print('UserService.updateUser - Attempt: $attempts, Fields: ${fields.keys.toList()}');
+        // NUEVO: Manejar eliminación de imagen
+        if (removeImage) {
+          fields['remove_image'] = 'true';
+        }
+
+        print('UserService.updateUser - Attempt: $attempts');
+        print('Fields: ${fields.keys.toList()}');
+        print('Has image file: ${imageFile != null}');
+        print('Remove image: $removeImage');
 
         DatabaseResponse<Map<String, dynamic>> response;
 
         // LÓGICA MEJORADA PARA DECIDIR EL MÉTODO
-        if (imageFile != null) {
-          // Si hay archivo, SIEMPRE usar multipart
+        if (imageFile != null || removeImage) {
+          // Si hay archivo o se quiere eliminar imagen, usar multipart
           response = await _updateUserWithFile(userId, fields, imageFile);
         } else {
-          // Sin archivo, usar JSON normal (más eficiente)
+          // Sin cambios de imagen, usar JSON normal (más eficiente)
           response = await _updateUserWithoutFile(userId, fields);
         }
 
@@ -199,6 +209,105 @@ class UserService {
     return UserResponse.error('Error después de $maxRetries intentos');
   }
 
+  /// MÉTODO ACTUALIZADO para envío con archivo
+  static Future<DatabaseResponse<Map<String, dynamic>>> _updateUserWithFile(
+      String userId,
+      Map<String, String> fields,
+      File? imageFile,
+      ) async {
+    try {
+      // Crear request multipart manual para mayor control
+      final uri = Uri.parse('${DatabaseService.baseUrl}${DatabaseEndpoints.user}/$userId');
+      final request = http.MultipartRequest('PUT', uri);
+
+      // Agregar headers de autenticación
+      if (DatabaseService.hasAuthToken()) {
+        request.headers['Authorization'] = 'Bearer ${DatabaseService.getAuthToken()}';
+      }
+
+      // Agregar campos
+      request.fields.addAll(fields);
+
+      // Agregar archivo si existe
+      if (imageFile != null) {
+        // Validar archivo antes de enviarlo
+        if (!await imageFile.exists()) {
+          return DatabaseResponse.error('El archivo de imagen no existe');
+        }
+
+        // Validar tamaño (máximo 5MB)
+        final fileSize = await imageFile.length();
+        if (fileSize > 5 * 1024 * 1024) {
+          return DatabaseResponse.error('La imagen es demasiado grande (máximo 5MB)');
+        }
+
+        // Validar tipo de archivo
+        final extension = imageFile.path.toLowerCase();
+        if (!extension.endsWith('.jpg') &&
+            !extension.endsWith('.jpeg') &&
+            !extension.endsWith('.png')) {
+          return DatabaseResponse.error('Formato de imagen no válido. Use JPG o PNG');
+        }
+
+        try {
+          // Crear MultipartFile con el nombre correcto que espera el servidor
+          request.files.add(await http.MultipartFile.fromPath(
+            'foto_perfil', // Nombre del campo que espera el servidor
+            imageFile.path,
+            contentType: MediaType('image', extension.endsWith('.png') ? 'png' : 'jpeg'),
+          ));
+
+          print('Archivo agregado: ${imageFile.path}');
+          print('Tamaño: ${fileSize} bytes');
+        } catch (e) {
+          return DatabaseResponse.error('Error procesando archivo de imagen: $e');
+        }
+      }
+
+      print('=== UPDATE USER REQUEST ===');
+      print('URL: ${request.url}');
+      print('Fields: ${request.fields}');
+      print('Files: ${request.files.length}');
+      print('========================');
+
+      // Enviar request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        try {
+          final jsonData = json.decode(response.body);
+          return DatabaseResponse.success(
+            jsonData as Map<String, dynamic>,
+            statusCode: response.statusCode,
+          );
+        } catch (e) {
+          return DatabaseResponse.error('Error parsing response: $e');
+        }
+      } else {
+        String errorMessage = 'Error del servidor';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData is Map<String, dynamic>) {
+            errorMessage = errorData['error']?.toString() ??
+                errorData['message']?.toString() ??
+                'Error del servidor';
+          }
+        } catch (e) {
+          errorMessage = response.body.isNotEmpty ? response.body : 'Error desconocido';
+        }
+
+        return DatabaseResponse.error(
+          errorMessage,
+        );
+      }
+    } catch (e) {
+      return DatabaseResponse.error('Error de conexión: $e');
+    }
+  }
   /// Obtener lista de usuarios sin rol - para UserListScreen
   static Future<UsersListResponse> getUsersWithoutRole({
     required String token,
@@ -609,25 +718,6 @@ class UserService {
 
     // Si no se puede extraer, retornar lista vacía
     return [];
-  }
-
-  /// Actualizar usuario con archivo usando multipart
-  static Future<DatabaseResponse<Map<String, dynamic>>> _updateUserWithFile(
-      String userId,
-      Map<String, String> fields,
-      File imageFile,
-      ) async {
-    try {
-      return await DatabaseService.putWithFile<Map<String, dynamic>>(
-        '/${DatabaseEndpoints.user}/$userId',
-        fields,
-        imageFile,
-        'foto_perfil',
-        requiresAuth: true,
-      );
-    } catch (e) {
-      return DatabaseResponse.error('Error al enviar archivo: $e');
-    }
   }
 
   /// Actualizar usuario sin archivo usando PUT

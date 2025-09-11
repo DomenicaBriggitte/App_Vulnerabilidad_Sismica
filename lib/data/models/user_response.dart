@@ -104,6 +104,7 @@ class UsersListResponse {
   }
 }
 
+// ACTUALIZACIÓN EN UserData - user_response.dart
 class UserData {
   final int idUsuario;
   final String nombre;
@@ -136,6 +137,24 @@ class UserData {
       userId = json['userId'] is int ? json['userId'] : int.tryParse(json['userId'].toString());
     }
 
+    // MEJORADO: Manejo de URL de foto más robusto
+    String? fotoUrl;
+    if (json['foto_perfil_url'] != null && json['foto_perfil_url'].toString().trim().isNotEmpty) {
+      fotoUrl = json['foto_perfil_url'].toString().trim();
+    } else if (json['foto_url'] != null && json['foto_url'].toString().trim().isNotEmpty) {
+      fotoUrl = json['foto_url'].toString().trim();
+    } else if (json['foto'] != null && json['foto'].toString().trim().isNotEmpty) {
+      fotoUrl = json['foto'].toString().trim();
+    } else if (json['profileImage'] != null && json['profileImage'].toString().trim().isNotEmpty) {
+      fotoUrl = json['profileImage'].toString().trim();
+    }
+
+    // Validar que la URL sea válida (opcional)
+    if (fotoUrl != null && !_isValidImageUrl(fotoUrl)) {
+      print('Warning: Invalid image URL detected: $fotoUrl');
+      fotoUrl = null;
+    }
+
     return UserData(
       idUsuario: userId ?? 0,
       nombre: json['nombre']?.toString() ?? json['name']?.toString() ?? '',
@@ -144,7 +163,7 @@ class UserData {
       telefono: json['telefono']?.toString() ?? json['phone']?.toString(),
       rol: json['rol']?.toString() ?? json['role']?.toString() ?? '',
       direccion: json['direccion']?.toString() ?? json['address']?.toString(),
-      fotoPerfilUrl: json['foto_perfil_url']?.toString() ?? json['foto']?.toString(),
+      fotoPerfilUrl: fotoUrl,
     );
   }
 
@@ -159,6 +178,50 @@ class UserData {
       'direccion': direccion,
       'foto_perfil_url': fotoPerfilUrl,
     };
+  }
+
+  // NUEVO: Método para validar URLs de imagen
+  static bool _isValidImageUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+
+      // Debe tener scheme (http/https)
+      if (!uri.hasScheme) return false;
+
+      // Solo permitir http y https
+      if (uri.scheme != 'http' && uri.scheme != 'https') return false;
+
+      // Debe tener host
+      if (!uri.hasAuthority || uri.host.isEmpty) return false;
+
+      // Opcional: validar extensiones de imagen
+      final path = uri.path.toLowerCase();
+      final validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+      // Si tiene extensión, debe ser una válida para imagen
+      if (path.contains('.')) {
+        return validExtensions.any((ext) => path.endsWith(ext));
+      }
+
+      return true; // URL válida sin extensión específica
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // MEJORADO: Getter para verificar si tiene foto
+  bool get hasProfileImage {
+    return fotoPerfilUrl != null &&
+        fotoPerfilUrl!.trim().isNotEmpty &&
+        _isValidImageUrl(fotoPerfilUrl!);
+  }
+
+  // NUEVO: Getter para obtener URL de imagen o placeholder
+  String get profileImageUrl {
+    if (hasProfileImage) {
+      return fotoPerfilUrl!;
+    }
+    return ''; // Retornar string vacío para usar placeholder
   }
 
   // Método helper para convertir a Map compatible con pantallas existentes
@@ -177,7 +240,10 @@ class UserData {
       'direccion': direccion,
       'address': direccion,
       'foto_perfil_url': fotoPerfilUrl,
-      'foto': fotoPerfilUrl,
+      'foto_url': fotoPerfilUrl, // Alias para compatibilidad
+      'foto': fotoPerfilUrl,     // Otro alias
+      'profileImage': fotoPerfilUrl, // Otro alias
+      'hasProfileImage': hasProfileImage, // Helper
     };
   }
 
@@ -235,7 +301,7 @@ class UserData {
 
   @override
   String toString() {
-    return 'UserData{idUsuario: $idUsuario, nombre: $nombre, email: $email, rol: $rol}';
+    return 'UserData{idUsuario: $idUsuario, nombre: $nombre, email: $email, rol: $rol, hasImage: $hasProfileImage}';
   }
 
   @override

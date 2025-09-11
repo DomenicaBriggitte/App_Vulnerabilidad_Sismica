@@ -545,7 +545,7 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Text(
-              "Hola, $_userName",
+              "",
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -820,7 +820,6 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
       ),
     );
   }
-
   // WIDGET PARA MOSTRAR LA IMAGEN DEL EDIFICIO
   Widget _buildBuildingImage(BuildingData edificio) {
     // DEBUGGING: Verificar qué datos llegan

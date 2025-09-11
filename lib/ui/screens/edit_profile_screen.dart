@@ -35,6 +35,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   File? _selectedImage;
   bool _loading = false;
   bool _hasChanges = false;
+  bool _imageRemoved = false; // Nueva variable para track si se eliminó la imagen
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -68,7 +70,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final hasPhoneChange = _telefonoController.text.trim() != (_originalTelefono ?? '');
     final hasEmailChange = _emailController.text.trim() != (_originalEmail ?? '');
     final hasCedulaChange = _cedulaController.text.trim() != (_originalCedula ?? '');
-    final hasImageChange = _selectedImage != null;
+    final hasImageChange = _selectedImage != null || _imageRemoved;
 
     setState(() {
       _hasChanges = hasNameChange || hasPhoneChange || hasEmailChange || hasCedulaChange || hasImageChange;
@@ -78,54 +80,165 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _selectImage() async {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
         return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Galería'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Cámara'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.cancel),
-                title: const Text('Cancelar'),
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Seleccionar imagen',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildImageOption(
+                      icon: Icons.photo_camera,
+                      label: 'Cámara',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _pickImage(ImageSource.camera);
+                      },
+                    ),
+                    _buildImageOption(
+                      icon: Icons.photo_library,
+                      label: 'Galería',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _pickImage(ImageSource.gallery);
+                      },
+                    ),
+                    if (_selectedImage != null || (_originalFoto != null && _originalFoto!.isNotEmpty && !_imageRemoved))
+                      _buildImageOption(
+                        icon: Icons.delete,
+                        label: 'Eliminar',
+                        color: Colors.red,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _removeImage();
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
+  Widget _buildImageOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: (color ?? AppColors.primary).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 30,
+              color: color ?? AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color ?? AppColors.text,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: source);
+      final pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
 
       if (pickedFile != null) {
         setState(() {
           _selectedImage = File(pickedFile.path);
+          _imageRemoved = false; // Reset removed flag cuando se selecciona nueva imagen
         });
         _checkForChanges();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Imagen seleccionada correctamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al seleccionar imagen: $e')),
+        SnackBar(
+          content: Text('Error al seleccionar imagen: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _imageRemoved = true;
+    });
+    _checkForChanges();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Imagen eliminada'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   String? _validateNombre(String? value) {
@@ -205,6 +318,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
+  // MÉTODO _saveProfile() ACTUALIZADO en EditProfileScreen
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate() || !_hasChanges) return;
 
@@ -218,9 +332,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         throw Exception('Datos de sesión no válidos');
       }
 
-      debugPrint('Actualizando usuario $userId');
+      debugPrint('=== ACTUALIZANDO PERFIL ===');
+      debugPrint('Usuario ID: $userId');
+      debugPrint('Tiene nueva imagen: ${_selectedImage != null}');
+      debugPrint('Imagen eliminada: $_imageRemoved');
+      debugPrint('Cambios detectados: $_hasChanges');
 
-      // Usar el nuevo servicio
+      // Usar el UserService con los nuevos parámetros
       final response = await UserService.updateUser(
         token: token,
         userId: userId,
@@ -236,7 +354,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         cedula: _cedulaController.text.trim() != _originalCedula
             ? _cedulaController.text.trim()
             : null,
-        imageFile: _selectedImage,
+        imageFile: _selectedImage, // Solo enviar si hay nueva imagen
+        removeImage: _imageRemoved, // NUEVO: Flag para eliminar imagen
       );
 
       if (response.success) {
@@ -244,16 +363,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SnackBar(
             content: Text('Perfil actualizado exitosamente'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
 
-        // Regresar con indicador de éxito
-        Navigator.of(context).pop(true);
+        // Resetear flags de cambios
+        setState(() {
+          _hasChanges = false;
+          _selectedImage = null;
+          _imageRemoved = false;
+
+          // Actualizar valores originales con los nuevos datos
+          if (response.data != null) {
+            _originalNombre = response.data!.nombre;
+            _originalTelefono = response.data!.telefono;
+            _originalEmail = response.data!.email;
+            _originalCedula = response.data!.cedula;
+            _originalFoto = response.data!.fotoPerfilUrl;
+          }
+        });
+
+        // Regresar con los datos actualizados
+        Navigator.of(context).pop({
+          'success': true,
+          'userData': response.data?.toCompatibleMap(),
+        });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response.error ?? 'Error al actualizar perfil'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -262,12 +402,123 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         SnackBar(
           content: Text('Error de conexión: $e'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
       debugPrint("Error al actualizar perfil: $e");
     } finally {
       setState(() => _loading = false);
     }
+  }
+  // Widget para mostrar la imagen de perfil con indicadores visuales
+  Widget _buildProfileImage() {
+    Widget imageWidget;
+
+    if (_selectedImage != null) {
+      // Mostrar nueva imagen seleccionada
+      imageWidget = ClipOval(
+        child: Image.file(
+          _selectedImage!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else if (_imageRemoved) {
+      // Imagen eliminada, mostrar placeholder
+      imageWidget = _buildPlaceholderImage();
+    } else if (_originalFoto != null && _originalFoto!.isNotEmpty) {
+      // Mostrar imagen original del servidor
+      imageWidget = ClipOval(
+        child: Image.network(
+          _originalFoto!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: 120,
+              height: 120,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.gray300,
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            // Si hay error cargando la imagen de red, mostrar placeholder
+            return _buildPlaceholderImage();
+          },
+        ),
+      );
+    } else {
+      // No hay imagen original, mostrar placeholder
+      imageWidget = _buildPlaceholderImage();
+    }
+
+    return Stack(
+      children: [
+        imageWidget,
+        // Botón flotante para cambiar imagen
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: IconButton(
+              onPressed: _selectImage,
+              icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+              iconSize: 20,
+            ),
+          ),
+        ),
+        // Indicador de cambio
+        if (_selectedImage != null || _imageRemoved)
+          Positioned(
+            top: 0,
+            left: 0,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _imageRemoved ? Colors.red : Colors.green,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Icon(
+                _imageRemoved ? Icons.delete : Icons.check,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+// Widget para mostrar placeholder cuando no hay imagen
+  Widget _buildPlaceholderImage() {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.primary.withOpacity(0.1),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+      ),
+      child: const Icon(
+        Icons.person,
+        size: 60,
+        color: AppColors.primary,
+      ),
+    );
   }
 
   @override
@@ -287,6 +538,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Text('Editar Perfil'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -295,31 +547,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Imagen de perfil con botón flotante
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundImage: _selectedImage != null
-                        ? FileImage(_selectedImage!) as ImageProvider
-                        : (_originalFoto != null && _originalFoto!.isNotEmpty
-                        ? NetworkImage(_originalFoto!)
-                        : const AssetImage("assets/images/avatar_placeholder.png")),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: FloatingActionButton(
-                      mini: true,
-                      onPressed: _selectImage,
-                      backgroundColor: AppColors.primary,
-                      child: const Icon(Icons.camera_alt, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
+              const SizedBox(height: 20),
+
+              // Imagen de perfil mejorada
+              _buildProfileImage(),
 
               const SizedBox(height: 32),
+
               // Campo Nombre
               TextFormField(
                 controller: _nombreController,
@@ -335,7 +569,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
 
               const SizedBox(height: 16),
-              // Campo Teléfono - ACTUALIZADO
+
+              // Campo Teléfono
               TextFormField(
                 controller: _telefonoController,
                 decoration: const InputDecoration(
@@ -347,13 +582,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   helperMaxLines: 2,
                 ),
                 keyboardType: TextInputType.phone,
-                maxLength: 10, // Cambiado a 10
+                maxLength: 10,
                 validator: _validateTelefono,
                 style: const TextStyle(color: AppColors.text),
               ),
 
               const SizedBox(height: 16),
-
 
               // Botón Guardar
               SizedBox(
@@ -362,7 +596,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onPressed: (_hasChanges && !_loading) ? _saveProfile : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _hasChanges ? AppColors.primary : AppColors.gray300,
+                    foregroundColor: _hasChanges ? Colors.white : AppColors.gray500,
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: _hasChanges ? 2 : 0,
                   ),
                   child: _loading
                       ? const SizedBox(
@@ -376,7 +615,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       : Text(
                     'Guardar Cambios',
                     style: TextStyle(
-                      color: _hasChanges ? Colors.white : AppColors.gray500,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -395,6 +633,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     fontSize: 12,
                   ),
                   textAlign: TextAlign.center,
+                ),
+
+              if (_hasChanges)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Hay cambios pendientes por guardar',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
