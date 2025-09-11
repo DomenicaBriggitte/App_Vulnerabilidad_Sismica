@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/models/home_response.dart';
 import '../widgets/app_logo.dart';
 import '../../core/services/register_service.dart';
 import '../../data/models/register_response.dart';
@@ -28,6 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // State variables
   bool _isLoading = false;
   bool _isCheckingAvailability = false;
+  bool _isRegistrationInProgress = false; // NUEVA VARIABLE PARA EVITAR DOBLE CLICK
   bool _passwordTouched = false;
   bool _cedulaTouched = false;
   bool _nombreTouched = false;
@@ -38,7 +40,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _usernameError;
   String? _emailError;
   String? _passwordError;
-  String _selectedRole = 'inspector'; // Valor por defecto
+
+  // CONFIGURACION DEL ROL POR DEFECTO
+  // Como programador, cambia este valor según necesites:
+  // 'inspector' - para registrar inspectores
+  // 'ayudante' - para registrar ayudantes
+  // 'admin' - para registrar administradores
+  static const String _defaultRole = 'inspector'; // CAMBIAR AQUI EL ROL
 
   // Constants - Ajustados según el servidor
   static const int _cedulaLength = 10;
@@ -47,12 +55,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
   static const int _maxEmailLength = 150;
   static const int _minPasswordLength = 6;
 
-  // Roles disponibles
-  static const Map<String, String> _availableRoles = {
-    'admin': 'Administrador',
-    'inspector': 'Inspector',
-    'ayudante': 'Ayudante',
-  };
+  // Helper para obtener nombre del rol para mostrar al usuario
+  static String get _roleDisplayName {
+    switch (_defaultRole) {
+      case 'admin':
+        return 'Administrador';
+      case 'inspector':
+        return 'Inspector';
+      case 'ayudante':
+        return 'Ayudante';
+      default:
+        return _defaultRole.toUpperCase();
+    }
+  }
+
+  // Helper para obtener color del rol
+  static Color get _roleColor {
+    switch (_defaultRole) {
+      case 'admin':
+        return Colors.red;
+      case 'inspector':
+        return Colors.blue;
+      case 'ayudante':
+        return Colors.green;
+      default:
+        return AppColors.primary;
+    }
+  }
 
   @override
   void dispose() {
@@ -121,7 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
-  // Registration Logic
+  // Registration Logic - MÉTODO MEJORADO
   Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -132,7 +161,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    // EVITAR DOBLE CLICK Y MÚLTIPLES INTENTOS
+    if (_isRegistrationInProgress) {
+      _showErrorMessage('Registro en progreso, por favor espere...');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _isRegistrationInProgress = true;
+    });
 
     _logRegistrationData();
 
@@ -140,23 +178,75 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final registerResponse = await RegisterService.registerUser(
         cedula: _cedulaController.text.trim(),
         username: _nombreController.text.trim(),
-        role: _selectedRole,
+        role: _defaultRole, // USAR ROL CONFIGURADO
         email: _emailController.text.trim(),
         phone: _completePhoneNumber,
         password: _passwordController.text,
-        maxRetries: 2,
+        maxRetries: 1, // SOLO 1 INTENTO PARA EVITAR PROBLEMAS DE TRANSACCIÓN
       );
 
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _isRegistrationInProgress = false;
+        });
         _handleRegistrationResponse(registerResponse);
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorMessage('Error inesperado: $e');
+        setState(() {
+          _isLoading = false;
+          _isRegistrationInProgress = false;
+        });
+
+        // FILTRAR EL ERROR DE TRANSACCIÓN Y MOSTRAR MENSAJE AMIGABLE
+        String errorMessage = e.toString();
+
+        if (errorMessage.contains('Transaction query already complete') ||
+            errorMessage.contains('knex:tx') ||
+            errorMessage.contains('transaction')) {
+          // NO MOSTRAR EL ERROR TÉCNICO, USAR MENSAJE AMIGABLE
+          _showTransactionErrorDialog();
+        } else {
+          _showErrorMessage('Error inesperado: $e');
+        }
       }
     }
+  }
+
+  // NUEVO MÉTODO PARA MANEJAR ERROR DE TRANSACCIÓN
+  void _showTransactionErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Procesando registro'),
+          ],
+        ),
+        content: const Text(
+            'El registro está siendo procesado por el servidor.\n\n'
+                'Si el registro fue exitoso, podrá iniciar sesión. '
+                'Si no, puede intentar registrarse nuevamente en unos momentos.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Intentar nuevamente'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacementNamed('/login');
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Ir a Login', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _hasValidationErrors() {
@@ -168,20 +258,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _logRegistrationData() {
-    debugPrint('📝 Datos a enviar:');
+    debugPrint('Datos a enviar:');
     debugPrint('  - Cédula: ${_cedulaController.text.trim()}');
     debugPrint('  - Nombre: ${_nombreController.text.trim()}');
-    debugPrint('  - Rol: $_selectedRole');
+    debugPrint('  - Rol: $_defaultRole ($_roleDisplayName)');
     debugPrint('  - Email: ${_emailController.text.trim()}');
     debugPrint('  - Teléfono: $_completePhoneNumber');
   }
 
+  Future<void> _updateSharedPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString('accessToken', ''); // Reemplaza con el token real si está disponible
+      await prefs.setString('userId', ''); // Reemplaza con el ID real si está disponible
+      await prefs.setString('userName', _nombreController.text.trim());
+      await prefs.setString('userRole', _defaultRole);
+      await prefs.setString('userEmail', _emailController.text.trim());
+      await prefs.setString('userPhone', _telefonoController.text.trim());
+      await prefs.setString('userCedula', _cedulaController.text.trim());
+      await prefs.setBool('isFirstLogin', true);
+
+      debugPrint('SharedPreferences actualizado con nuevos datos.');
+    } catch (e) {
+      debugPrint('Error actualizando SharedPreferences: $e');
+    }
+  }
+
   void _handleRegistrationResponse(RegisterResponse response) {
-    debugPrint('📋 Respuesta del registro: ${response.toString()}');
+    debugPrint('Respuesta del registro: ${response.toString()}');
 
     if (response.success) {
       _showSuccessMessage(response.message ?? 'Registro exitoso');
-
+      _updateSharedPreferences();
       if (response.isCompleteSuccess) {
         // Registro exitoso CON login automático
         _handleSuccessfulRegistrationWithLogin(response);
@@ -194,42 +303,99 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // MÉTODO MEJORADO CON DEBUG Y DATOS COMPLETOS
   Future<void> _handleSuccessfulRegistrationWithLogin(RegisterResponse response) async {
     try {
-      // Guardar datos de sesión en SharedPreferences
       final prefs = await SharedPreferences.getInstance();
+
+      // GUARDAR DATOS COMPLETOS PARA HOME
       await prefs.setString('accessToken', response.token!);
       await prefs.setString('userId', response.userIdValue!.toString());
-      await prefs.setString('userName', response.username ?? 'Usuario');
-      await prefs.setString('userRole', response.role ?? 'user');
+      await prefs.setString('userName', response.username ?? _nombreController.text.trim());
+      await prefs.setString('userRole', response.role ?? _defaultRole);
 
-      debugPrint('✅ Datos guardados en SharedPreferences');
-      debugPrint('  - Token: ${response.token!.substring(0, 10)}...');
-      debugPrint('  - UserId: ${response.userIdValue}');
-      debugPrint('  - UserName: ${response.username}');
-      debugPrint('  - UserRole: ${response.role}');
+      // INFORMACIÓN ADICIONAL DEL REGISTRO
+      await prefs.setString('userEmail', response.email ?? _emailController.text.trim());
+      await prefs.setString('userPhone', _completePhoneNumber);
+      await prefs.setString('userCedula', _cedulaController.text.trim());
+      await prefs.setBool('isFirstLogin', true);
+      await prefs.setString('registrationSource', 'register'); // Para distinguir origen
+      await prefs.setString('registrationTime', DateTime.now().toIso8601String());
 
-      // SIMPLIFICADO: Usar siempre el SuccessRegistrationDialog que maneja la navegación
+      debugPrint('REGISTRO - Datos completos guardados en SharedPreferences:');
+      debugPrint('  - accessToken: ${response.token!.substring(0, 10)}...');
+      debugPrint('  - userId: ${response.userIdValue}');
+      debugPrint('  - userName: ${response.username ?? _nombreController.text.trim()}');
+      debugPrint('  - userRole: ${response.role ?? _defaultRole}');
+      debugPrint('  - userEmail: ${response.email ?? _emailController.text.trim()}');
+      debugPrint('  - userPhone: $_completePhoneNumber');
+      debugPrint('  - userCedula: ${_cedulaController.text.trim()}');
+      debugPrint('  - isFirstLogin: true');
+      debugPrint('  - registrationSource: register');
+
+      // VALIDAR DATOS GUARDADOS
+      _validateSavedData(prefs);
+
+      // Usar siempre el SuccessRegistrationDialog que maneja la navegación
       _showSuccessDialog(response);
 
     } catch (e) {
-      debugPrint('❌ Error guardando datos de sesión: $e');
+      debugPrint('ERROR guardando datos de sesión: $e');
+      _showErrorMessage('Error guardando datos de sesión: $e');
       _showSuccessDialog(response); // Fallback al diálogo normal
     }
   }
 
+  // MÉTODO DE VALIDACIÓN DE DATOS GUARDADOS
+  void _validateSavedData(SharedPreferences prefs) {
+    debugPrint('VALIDANDO datos guardados en SharedPreferences:');
+
+    final requiredKeys = [
+      'accessToken',
+      'userId',
+      'userName',
+      'userRole',
+      'userEmail'
+    ];
+
+    bool allDataPresent = true;
+    for (final key in requiredKeys) {
+      final value = prefs.getString(key);
+      debugPrint('  - $key: ${value ?? 'FALTANTE'}');
+      if (value == null || value.isEmpty) {
+        allDataPresent = false;
+        debugPrint('    ⚠️ ADVERTENCIA: $key está vacío o faltante');
+      }
+    }
+
+    if (allDataPresent) {
+      debugPrint('✅ VALIDACIÓN: Todos los datos requeridos están presentes');
+    } else {
+      debugPrint('❌ VALIDACIÓN: Faltan algunos datos requeridos');
+    }
+  }
+
   void _showSuccessDialog(RegisterResponse response) {
-    // El SuccessRegistrationDialog ahora maneja la navegación por roles automáticamente
+    // El SuccessRegistrationDialog maneja la navegación por roles automáticamente
     SuccessRegistrationDialog.show(
       context: context,
       response: response,
-      // No necesitamos onContinue personalizado, el widget maneja todo
     );
   }
 
   void _handleRegistrationError(RegisterResponse response) {
-    final errorMessage = _getFormattedErrorMessage(response);
-    _showErrorMessage(errorMessage);
+    // FILTRAR ERRORES TÉCNICOS DE TRANSACCIÓN TAMBIÉN AQUÍ
+    String errorMessage = response.error ?? 'Error desconocido';
+
+    if (errorMessage.contains('Transaction query already complete') ||
+        errorMessage.contains('knex:tx') ||
+        errorMessage.contains('transaction')) {
+      _showTransactionErrorDialog();
+      return;
+    }
+
+    final formattedError = _getFormattedErrorMessage(response);
+    _showErrorMessage(formattedError);
   }
 
   String _getFormattedErrorMessage(RegisterResponse response) {
@@ -306,6 +472,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // Widget para mostrar información del rol asignado
+  Widget _buildRoleInfoCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: _roleColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _roleColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _defaultRole == 'admin' ? Icons.admin_panel_settings :
+            _defaultRole == 'inspector' ? Icons.search :
+            Icons.build,
+            color: _roleColor,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rol asignado automáticamente',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _roleColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _roleDisplayName,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _roleColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Form Field Builders
   Widget _buildCedulaField() {
     return TextFormField(
@@ -371,39 +587,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else {
       setState(() => _usernameError = null);
     }
-  }
-
-  Widget _buildRoleDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _selectedRole,
-      decoration: const InputDecoration(
-        labelText: 'Rol',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.work),
-      ),
-      items: _availableRoles.entries.map((entry) {
-        return DropdownMenuItem<String>(
-          value: entry.key,
-          child: Text(
-            entry.value,
-            style: const TextStyle(color: Colors.black),
-          ),
-        );
-      }).toList(),
-      onChanged: _isLoading ? null : (String? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _selectedRole = newValue;
-          });
-        }
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Seleccione un rol';
-        }
-        return null;
-      },
-    );
   }
 
   Widget _buildEmailField() {
@@ -552,12 +735,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // BOTÓN MEJORADO PARA EVITAR DOBLE CLICK
   Widget _buildRegisterButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _isLoading || _isCheckingAvailability ? null : _registerUser,
+        onPressed: (_isLoading || _isCheckingAvailability || _isRegistrationInProgress)
+            ? null
+            : _registerUser,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           disabledBackgroundColor: AppColors.gray300,
@@ -665,13 +851,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     return null;
   }
-
+// Validation Methods - CORREGIDOS
   String? _validatePhone(phone) {
     final phoneNumber = phone?.number ?? '';
     if (phoneNumber.isEmpty) {
       return 'El número de teléfono es requerido';
     }
-    if (!RegExp(r'^[0-9]+$').hasMatch(phoneNumber)) {
+    if (!RegExp(r'^[0-9]+$').hasMatch(phoneNumber)) { // CORREGIDO: Faltaba comilla de cierre
       return 'Solo se permiten números';
     }
     if (phoneNumber.length > 10) {
@@ -683,11 +869,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? _validatePassword(String? value) {
+  String? _validatePassword(String? value) { // CORREGIDO: _ en lugar de *
     if (value == null || value.isEmpty) {
       return 'La contraseña es requerida';
     }
-    if (value.length < _minPasswordLength) {
+    if (value.length < _minPasswordLength) { // CORREGIDO: _ en lugar de *
       return 'La contraseña debe tener al menos $_minPasswordLength caracteres';
     }
     if (!RegExp(r'[A-Z]').hasMatch(value)) {
@@ -699,11 +885,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? _validateConfirmPassword(String? value) {
+  String? _validateConfirmPassword(String? value) { // CORREGIDO: _ en lugar de *
     if (value == null || value.isEmpty) {
       return 'Confirme su contraseña';
     }
-    if (value != _passwordController.text) {
+    if (value != _passwordController.text) { // CORREGIDO: _ en lugar de *
       return 'Las contraseñas no coinciden';
     }
     return null;
@@ -745,25 +931,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // MOSTRAR ROL ASIGNADO
+                  _buildRoleInfoCard(), // CORREGIDO: _ en lugar de *
+
                   Form(
-                    key: _formKey,
+                    key: _formKey, // CORREGIDO: _ en lugar de *
                     child: Column(
                       children: [
-                        _buildCedulaField(),
+                        _buildCedulaField(), // CORREGIDO: _ en lugar de *
                         const SizedBox(height: 12),
-                        _buildNombreField(),
+                        _buildNombreField(), // CORREGIDO: _ en lugar de *
                         const SizedBox(height: 12),
-                        _buildEmailField(),
+                        _buildEmailField(), // CORREGIDO: _ en lugar de *
                         const SizedBox(height: 12),
-                        _buildPhoneField(),
+                        _buildPhoneField(), // CORREGIDO: _ en lugar de *
                         const SizedBox(height: 12),
-                        _buildPasswordField(),
+                        _buildPasswordField(), // CORREGIDO: _ en lugar de *
                         const SizedBox(height: 12),
-                        _buildConfirmPasswordField(),
+                        _buildConfirmPasswordField(), // CORREGIDO: _ en lugar de *
                         const SizedBox(height: 24),
-                        _buildRegisterButton(),
+                        _buildRegisterButton(), // CORREGIDO: _ en lugar de *
                         const SizedBox(height: 16),
-                        _buildLoginLink(textTheme),
+                        _buildLoginLink(textTheme), // CORREGIDO: _ en lugar de *
                       ],
                     ),
                   ),

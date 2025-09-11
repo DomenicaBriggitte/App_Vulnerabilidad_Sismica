@@ -48,6 +48,7 @@ class MyApp extends StatelessWidget {
         '/building': (_) => const BuildingsScreen(),
         '/exten': (_) => const ExtensionRevisionPage(),
         '/forgot': (_) => const ForgotPasswordScreen(),
+        '/home_admin': (context) => const HomeAdminScreen(),
         '/homeAdmin': (context) => const HomeAdminScreen(),
         '/home': (context) => const HomePage(),
         '/profileAdmin': (_) => const ProfileAdminScreen(),

@@ -1,4 +1,4 @@
-// building_service.dart - VERSIÓN CORREGIDA
+// building_service.dart - VERSIÓN CORREGIDA PARA COMPATIBILIDAD CON SERVIDOR
 import 'dart:io';
 import '../config/database_config.dart';
 import '../constants/database_endpoints.dart';
@@ -79,9 +79,9 @@ class BuildingService {
       try {
         print('BuildingService: Intento $attemptCount/$maxRetries para crear edificio');
 
-        // ===== PREPARAR CAMPOS CON VALIDACIONES ADICIONALES =====
+        // ===== PREPARAR CAMPOS CON COMPATIBILIDAD DEL SERVIDOR =====
         final Map<String, String> fields = {
-          // IMPORTANTE: nombre_edificio ahora es REQUERIDO según análisis
+          // Campos de texto y números (funcionan correctamente)
           'nombre_edificio': nombreEdificio.trim(),
           'direccion': direccion.trim(),
           'ciudad': ciudad.trim(),
@@ -93,12 +93,15 @@ class BuildingService {
           'area_total_piso': areaTotalPiso.toStringAsFixed(2), // Más precisión
           'anio_construccion': anioConstruccion.toString(),
           'anio_codigo': anioCodigo.toString(),
-          'ampliacion': ampliacion.toString().toLowerCase(), // true/false en minúsculas
           'ocupacion': ocupacion.trim(),
-          'historico': historico.toString().toLowerCase(),
-          'albergue': albergue.toString().toLowerCase(),
-          'gubernamental': gubernamental.toString().toLowerCase(),
           'unidades': unidades.toString(),
+
+          // CORRECCIÓN CRÍTICA: El servidor espera "1" para true y "0" para false
+          // Las transformaciones del servidor son: (v) => v === "1"
+          'ampliacion': ampliacion ? '1' : '0',
+          'historico': historico ? '1' : '0',
+          'albergue': albergue ? '1' : '0',
+          'gubernamental': gubernamental ? '1' : '0',
         };
 
         // Agregar campos opcionales con validaciones
@@ -112,7 +115,13 @@ class BuildingService {
           fields['comentarios'] = comentarios.trim();
         }
 
-        print('Campos a enviar (validados): $fields');
+        // Log para verificar compatibilidad con servidor (remover en producción)
+        print('Campos enviados - verificación de booleanos:');
+        print('  - ampliacion: ${fields['ampliacion']} (bool original: $ampliacion)');
+        print('  - historico: ${fields['historico']} (bool original: $historico)');
+        print('  - albergue: ${fields['albergue']} (bool original: $albergue)');
+        print('  - gubernamental: ${fields['gubernamental']} (bool original: $gubernamental)');
+        print('Total campos: ${fields.length}');
 
         // Crear request multipart
         final request = DatabaseService.buildMultipartRequest(
@@ -319,7 +328,6 @@ class BuildingService {
       if (!allowedExtensions.contains('.$extension')) {
         return 'Formato de foto no válido. Use JPG o PNG.';
       }
-      // No podemos verificar el tamaño sin async, pero se puede hacer en el método principal
     }
 
     if (graficoEdificio != null) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/auth_service.dart';
-import '../../core/services/home_services.dart';
+import '../../core/services/database_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/connection_test_android.dart';
@@ -33,48 +33,46 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      print('🔐 Iniciando login con AuthService...');
+      print('Iniciando login con AuthService...');
 
-      // Usar AuthService con retry automático
+      // USAR SOLO AuthService - ya maneja todo el flujo interno
       final authResponse = await AuthService.login(
         email: email.text.trim(),
         password: password.text.trim(),
         maxRetries: 2,
       );
 
-      print('📋 Respuesta de AuthService: ${authResponse.toDebugMap()}');
+      print('Respuesta de AuthService: ${authResponse.toDebugMap()}');
 
       if (authResponse.success) {
-        // ✅ LOGIN EXITOSO - Obtener datos completos del usuario
+        // LOGIN EXITOSO - AuthResponse ya contiene todo lo necesario
         final token = authResponse.token!;
         final userId = authResponse.userId!.toString();
+        final userName = authResponse.userNameValue; // Ya incluye fallback
 
-        print('🔍 Obteniendo perfil completo del usuario...');
+        print('Datos del usuario obtenidos:');
+        print('  - userName: $userName');
+        print('  - userId: $userId');
+        print('  - token: ${token.substring(0, 10)}...');
 
-        // Obtener datos completos del usuario desde el servidor
-        final profileResponse = await HomeService.getUserProfile(
-          token: token,
-          userId: userId,
-        );
+        // OBTENER ROL DEL USUARIO - Solo si es necesario
+        String userRole = 'user'; // Valor por defecto
 
-        String userName = 'Usuario';
-        String userRole = 'user';
-
-        if (profileResponse.success && profileResponse.data != null) {
-          userName = profileResponse.data!.userInfo.nombre.isNotEmpty
-              ? profileResponse.data!.userInfo.nombre
-              : authResponse.userNameValue;
-          userRole = profileResponse.data!.userInfo.rol.toLowerCase();
-        } else {
-          // Fallback a datos del AuthResponse
-          userName = authResponse.userNameValue;
-          print('⚠️ No se pudo obtener perfil completo, usando datos básicos');
+        // El AuthService ya configuró el token, podemos hacer llamadas autenticadas
+        if (authResponse.nombre != null) {
+          // Si AuthService obtuvo el nombre, también intentar obtener el rol
+          try {
+            final roleResponse = await _getUserRole(token, userId);
+            if (roleResponse != null) {
+              userRole = roleResponse;
+            }
+          } catch (e) {
+            print('Error obteniendo rol: $e');
+            // Continuar con rol por defecto
+          }
         }
 
-        print('👤 Datos del usuario obtenidos:');
-        print('  - userName: $userName');
-        print('  - userRole: $userRole');
-        print('  - userId: $userId');
+        print('Rol final del usuario: $userRole');
 
         // Guardar en SharedPreferences
         final prefs = await SharedPreferences.getInstance();
@@ -84,16 +82,11 @@ class _LoginScreenState extends State<LoginScreen> {
         await prefs.setString('userRole', userRole);
 
         // Verificar que se guardaron correctamente
-        final savedToken = prefs.getString('accessToken');
-        final savedUserId = prefs.getString('userId');
-        final savedUserName = prefs.getString('userName');
-        final savedUserRole = prefs.getString('userRole');
-
-        print('✅ Datos guardados en SharedPreferences:');
-        print('  - accessToken: ${savedToken?.substring(0, 10)}...');
-        print('  - userId: $savedUserId');
-        print('  - userName: $savedUserName');
-        print('  - userRole: $savedUserRole');
+        print('Datos guardados en SharedPreferences:');
+        print('  - accessToken: ${token.substring(0, 10)}...');
+        print('  - userId: $userId');
+        print('  - userName: $userName');
+        print('  - userRole: $userRole');
 
         if (mounted) {
           // Mostrar mensaje de éxito
@@ -105,28 +98,12 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
 
-          // 🎯 REDIRECCIÓN SEGÚN EL ROL
-          print('🎯 Redirigiendo según el rol: $userRole');
-
-          if (userRole == 'admin') {
-            print('🔧 Navegando a HomeAdminScreen...');
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/homeAdmin',
-                  (route) => false,
-            );
-          } else {
-            print('👥 Navegando a HomePage...');
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/home',
-                  (route) => false,
-            );
-          }
+          // REDIRECCIÓN SEGÚN EL ROL
+          _redirectByRole(userRole);
         }
       } else {
-        // ❌ LOGIN FALLÓ
-        print('❌ Login falló: ${authResponse.error}');
+        // LOGIN FALLÓ
+        print('Login falló: ${authResponse.error}');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -139,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      print('💥 Error inesperado durante login: $e');
+      print('Error inesperado durante login: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -154,6 +131,67 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  // Método auxiliar para obtener rol del usuario
+  Future<String?> _getUserRole(String token, String userId) async {
+    try {
+      // Usar DatabaseService directamente ya que el token está configurado
+      final response = await DatabaseService.get<dynamic>(
+        '/users/$userId',
+        requiresAuth: true,
+      );
+
+      if (response.success && response.data != null) {
+        Map<String, dynamic> userData = response.data;
+
+        // Manejar diferentes estructuras de respuesta
+        if (userData.containsKey('data')) {
+          userData = userData['data'];
+        } else if (userData.containsKey('user')) {
+          userData = userData['user'];
+        }
+
+        final rol = userData['rol']?.toString();
+        return rol?.isNotEmpty == true ? rol!.toLowerCase() : null;
+      }
+    } catch (e) {
+      print('Error obteniendo rol: $e');
+    }
+    return null;
+  }
+
+  // Método auxiliar para redirección
+  void _redirectByRole(String userRole) {
+    print('Redirigiendo según el rol: $userRole');
+
+    switch (userRole.toLowerCase()) {
+      case 'admin':
+        print('Navegando a HomeAdminScreen...');
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/homeAdmin',
+              (route) => false,
+        );
+        break;
+      case 'inspector':
+      case 'ayudante':
+        print('Navegando a HomePage (inspector/ayudante)...');
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+              (route) => false,
+        );
+        break;
+      default:
+        print('Navegando a HomePage (usuario general)...');
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+              (route) => false,
+        );
+        break;
     }
   }
 

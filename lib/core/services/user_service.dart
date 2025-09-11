@@ -41,24 +41,11 @@ class UserService {
               // Si es String, intentar parsearlo como JSON
               final parsedData = json.decode(response.data as String);
               if (parsedData is Map<String, dynamic>) {
-                if (parsedData.containsKey('user')) {
-                  userData = parsedData['user'] as Map<String, dynamic>;
-                } else if (parsedData.containsKey('data')) {
-                  userData = parsedData['data'] as Map<String, dynamic>;
-                } else {
-                  userData = parsedData;
-                }
+                userData = _extractUserData(parsedData);
               }
             } else if (response.data is Map<String, dynamic>) {
               // Manejo normal para Map
-              final dataMap = response.data as Map<String, dynamic>;
-              if (dataMap.containsKey('user')) {
-                userData = dataMap['user'] as Map<String, dynamic>;
-              } else if (dataMap.containsKey('data')) {
-                userData = dataMap['data'] as Map<String, dynamic>;
-              } else {
-                userData = dataMap;
-              }
+              userData = _extractUserData(response.data as Map<String, dynamic>);
             }
           } catch (parseError) {
             print('Error parsing user data: $parseError');
@@ -163,24 +150,26 @@ class UserService {
 
         DatabaseResponse<Map<String, dynamic>> response;
 
-        // Decidir qué método usar basado en si hay archivo o no
-        if (imageFile != null || fields.isNotEmpty) {
-          if (imageFile != null) {
-            // Usar multipart para archivos
-            response = await _updateUserWithFile(userId, fields, imageFile);
-          } else {
-            // Usar PUT normal para solo datos
-            response = await _updateUserWithoutFile(userId, fields);
-          }
+        // LÓGICA MEJORADA PARA DECIDIR EL MÉTODO
+        if (imageFile != null) {
+          // Si hay archivo, SIEMPRE usar multipart
+          response = await _updateUserWithFile(userId, fields, imageFile);
         } else {
-          return UserResponse.error('No hay datos para actualizar');
+          // Sin archivo, usar JSON normal (más eficiente)
+          response = await _updateUserWithoutFile(userId, fields);
         }
 
         if (response.success && response.data != null) {
-          return UserResponse.success(
-            UserData.fromJson(response.data!),
-            message: 'Usuario actualizado correctamente',
-          );
+          // Extraer datos del usuario de la respuesta
+          final userData = _extractUserData(response.data!);
+          if (userData != null) {
+            return UserResponse.success(
+              UserData.fromJson(userData),
+              message: 'Usuario actualizado correctamente',
+            );
+          } else {
+            return UserResponse.error('Respuesta inválida del servidor');
+          }
         } else {
           // Si es un error de cliente (4xx), no reintentar
           if (response.statusCode != null && response.statusCode! >= 400 && response.statusCode! < 500) {
@@ -238,29 +227,7 @@ class UserService {
 
           // Manejo seguro de tipos de respuesta
           try {
-            if (response.data is String) {
-              final parsedData = json.decode(response.data as String);
-              if (parsedData is Map<String, dynamic>) {
-                if (parsedData.containsKey('users')) {
-                  usersData = parsedData['users'] as List<dynamic>;
-                } else if (parsedData.containsKey('data')) {
-                  usersData = parsedData['data'] as List<dynamic>;
-                }
-              } else if (parsedData is List<dynamic>) {
-                usersData = parsedData;
-              }
-            } else if (response.data is Map<String, dynamic>) {
-              final dataMap = response.data as Map<String, dynamic>;
-              if (dataMap.containsKey('users')) {
-                usersData = dataMap['users'] as List<dynamic>;
-              } else if (dataMap.containsKey('data')) {
-                usersData = dataMap['data'] as List<dynamic>;
-              } else if (dataMap is List) {
-                usersData = dataMap as List<dynamic>;
-              }
-            } else if (response.data is List<dynamic>) {
-              usersData = response.data as List<dynamic>;
-            }
+            usersData = _extractUsersArray(response.data);
           } catch (parseError) {
             print('Error parsing response data: $parseError');
             if (attempts >= maxRetries) {
@@ -272,14 +239,15 @@ class UserService {
             }
           }
 
-          // Convertir a lista de UserData
+          // Convertir a lista de UserData y filtrar usuarios sin rol
           final users = usersData
               .map((userData) => UserData.fromJson(userData as Map<String, dynamic>))
+              .where((user) => !user.hasValidRole) // Solo usuarios sin rol válido
               .toList();
 
           return UsersListResponse.success(
             users,
-            message: 'Lista de usuarios obtenida correctamente',
+            message: 'Lista de usuarios sin rol obtenida correctamente',
           );
         } else {
           // Si es un error de cliente (4xx), no reintentar
@@ -338,29 +306,7 @@ class UserService {
 
           // Manejo seguro de tipos de respuesta
           try {
-            if (response.data is String) {
-              final parsedData = json.decode(response.data as String);
-              if (parsedData is Map<String, dynamic>) {
-                if (parsedData.containsKey('users')) {
-                  usersData = parsedData['users'] as List<dynamic>;
-                } else if (parsedData.containsKey('data')) {
-                  usersData = parsedData['data'] as List<dynamic>;
-                }
-              } else if (parsedData is List<dynamic>) {
-                usersData = parsedData;
-              }
-            } else if (response.data is Map<String, dynamic>) {
-              final dataMap = response.data as Map<String, dynamic>;
-              if (dataMap.containsKey('users')) {
-                usersData = dataMap['users'] as List<dynamic>;
-              } else if (dataMap.containsKey('data')) {
-                usersData = dataMap['data'] as List<dynamic>;
-              } else if (dataMap is List) {
-                usersData = dataMap as List<dynamic>;
-              }
-            } else if (response.data is List<dynamic>) {
-              usersData = response.data as List<dynamic>;
-            }
+            usersData = _extractUsersArray(response.data);
           } catch (parseError) {
             print('Error parsing response data: $parseError');
             if (attempts >= maxRetries) {
@@ -372,10 +318,10 @@ class UserService {
             }
           }
 
-          // Convertir a lista de UserData - SIN filtrar por rol (excepto admins)
+          // Convertir a lista de UserData - SIN filtrar por rol (excepto admins si es necesario)
           final users = usersData
               .map((userData) => UserData.fromJson(userData as Map<String, dynamic>))
-              .where((user) => user.rol.toLowerCase() != 'admin') // Excluir admins
+              .where((user) => user.rol.toLowerCase() != 'admin') // Opcional: excluir admins
               .toList();
 
           return UsersListResponse.success(
@@ -440,27 +386,7 @@ class UserService {
 
           // Manejo seguro de tipos de respuesta
           try {
-            if (response.data is String) {
-              final parsedData = json.decode(response.data as String);
-              if (parsedData is List<dynamic>) {
-                usersData = parsedData;
-              } else if (parsedData is Map<String, dynamic>) {
-                if (parsedData.containsKey('users')) {
-                  usersData = parsedData['users'] as List<dynamic>;
-                } else if (parsedData.containsKey('data')) {
-                  usersData = parsedData['data'] as List<dynamic>;
-                }
-              }
-            } else if (response.data is List<dynamic>) {
-              usersData = response.data as List<dynamic>;
-            } else if (response.data is Map<String, dynamic>) {
-              final dataMap = response.data as Map<String, dynamic>;
-              if (dataMap.containsKey('users')) {
-                usersData = dataMap['users'] as List<dynamic>;
-              } else if (dataMap.containsKey('data')) {
-                usersData = dataMap['data'] as List<dynamic>;
-              }
-            }
+            usersData = _extractUsersArray(response.data);
           } catch (parseError) {
             print('Error parsing response data: $parseError');
             if (attempts >= maxRetries) {
@@ -527,19 +453,25 @@ class UserService {
         // Establecer el token de autenticación
         DatabaseService.setAuthToken(token);
 
-        // Usar PATCH personalizado para asignar rol
-        final response = await _patchRequest(
+        // Usar PATCH para asignar rol
+        final response = await DatabaseService.patch<Map<String, dynamic>>(
           '${DatabaseEndpoints.user}/$userId/role',
           {'rol': role},
+          requiresAuth: true,
         );
 
         print('UserService.assignRole - Attempt: $attempts, Success: ${response.success}');
 
         if (response.success && response.data != null) {
-          return UserResponse.success(
-            UserData.fromJson(response.data!),
-            message: 'Rol asignado correctamente',
-          );
+          final userData = _extractUserData(response.data!);
+          if (userData != null) {
+            return UserResponse.success(
+              UserData.fromJson(userData),
+              message: 'Rol asignado correctamente',
+            );
+          } else {
+            return UserResponse.error('Respuesta inválida del servidor');
+          }
         } else {
           // Si es un error de cliente (4xx), no reintentar
           if (response.statusCode != null && response.statusCode! >= 400 && response.statusCode! < 500) {
@@ -636,6 +568,49 @@ class UserService {
 
   // MÉTODOS PRIVADOS AUXILIARES
 
+  /// Extraer datos de usuario de diferentes estructuras de respuesta
+  static Map<String, dynamic>? _extractUserData(Map<String, dynamic> responseData) {
+    // El servidor puede retornar:
+    // - { user: {userData} }
+    // - { data: {userData} }
+    // - {userData} directamente
+    if (responseData.containsKey('user')) {
+      return responseData['user'] as Map<String, dynamic>;
+    } else if (responseData.containsKey('data')) {
+      return responseData['data'] as Map<String, dynamic>;
+    } else {
+      // Verificar si contiene campos de usuario directamente
+      if (responseData.containsKey('id_usuario') || responseData.containsKey('nombre') || responseData.containsKey('email')) {
+        return responseData;
+      }
+    }
+    return null;
+  }
+
+  /// Extraer array de usuarios de diferentes estructuras de respuesta
+  static List<dynamic> _extractUsersArray(dynamic responseData) {
+    if (responseData is String) {
+      final parsedData = json.decode(responseData as String);
+      return _extractUsersArray(parsedData);
+    } else if (responseData is List<dynamic>) {
+      return responseData;
+    } else if (responseData is Map<String, dynamic>) {
+      if (responseData.containsKey('users')) {
+        return responseData['users'] as List<dynamic>;
+      } else if (responseData.containsKey('data')) {
+        final data = responseData['data'];
+        if (data is List<dynamic>) {
+          return data;
+        } else if (data is Map<String, dynamic> && data.containsKey('users')) {
+          return data['users'] as List<dynamic>;
+        }
+      }
+    }
+
+    // Si no se puede extraer, retornar lista vacía
+    return [];
+  }
+
   /// Actualizar usuario con archivo usando multipart
   static Future<DatabaseResponse<Map<String, dynamic>>> _updateUserWithFile(
       String userId,
@@ -643,32 +618,13 @@ class UserService {
       File imageFile,
       ) async {
     try {
-      final uri = Uri.parse('${DatabaseConfig.getServerUrl()}${DatabaseEndpoints.user}/$userId');
-      final request = http.MultipartRequest('PUT', uri);
-
-      // Agregar headers de autenticación
-      if (DatabaseService.getAuthToken() != null) {
-        request.headers['Authorization'] = 'Bearer ${DatabaseService.getAuthToken()}';
-      }
-
-      // Agregar campos
-      request.fields.addAll(fields);
-
-      // Agregar archivo
-      request.files.add(await http.MultipartFile.fromPath(
+      return await DatabaseService.putWithFile<Map<String, dynamic>>(
+        '/${DatabaseEndpoints.user}/$userId',
+        fields,
+        imageFile,
         'foto_perfil',
-        imageFile.path,
-      ));
-
-      print('Enviando PUT multipart a: ${request.url}');
-      print('Campos: ${request.fields}');
-      print('Archivos: ${request.files.length}');
-
-      final streamedResponse = await request.send()
-          .timeout(Duration(milliseconds: DatabaseConfig.connectionTimeout));
-      final response = await http.Response.fromStream(streamedResponse);
-
-      return _handleHttpResponse(response);
+        requiresAuth: true,
+      );
     } catch (e) {
       return DatabaseResponse.error('Error al enviar archivo: $e');
     }
@@ -683,81 +639,13 @@ class UserService {
       // Convertir a Map<String, dynamic>
       final data = fields.map((key, value) => MapEntry(key, value as dynamic));
 
-      final response = await http.put(
-        Uri.parse('${DatabaseConfig.getServerUrl()}${DatabaseEndpoints.user}/$userId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (DatabaseService.getAuthToken() != null)
-            'Authorization': 'Bearer ${DatabaseService.getAuthToken()}',
-        },
-        body: json.encode(data),
-      ).timeout(Duration(milliseconds: DatabaseConfig.connectionTimeout));
-
-      return _handleHttpResponse(response);
+      return await DatabaseService.put<Map<String, dynamic>>(
+        '${DatabaseEndpoints.user}/$userId',
+        data,
+        requiresAuth: true,
+      );
     } catch (e) {
       return DatabaseResponse.error('Error de conexión PUT: $e');
-    }
-  }
-
-  /// Método PATCH personalizado
-  static Future<DatabaseResponse<Map<String, dynamic>>> _patchRequest(
-      String endpoint,
-      Map<String, dynamic> data,
-      ) async {
-    try {
-      final response = await http.patch(
-        Uri.parse('${DatabaseConfig.getServerUrl()}$endpoint'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (DatabaseService.getAuthToken() != null)
-            'Authorization': 'Bearer ${DatabaseService.getAuthToken()}',
-        },
-        body: json.encode(data),
-      ).timeout(Duration(milliseconds: DatabaseConfig.connectionTimeout));
-
-      return _handleHttpResponse(response);
-    } catch (e) {
-      return DatabaseResponse.error('Error de conexión PATCH: $e');
-    }
-  }
-
-  /// Handler para respuestas HTTP personalizado
-  static DatabaseResponse<Map<String, dynamic>> _handleHttpResponse(http.Response response) {
-    final statusCode = response.statusCode;
-
-    print('HTTP Response - Status: $statusCode, Body: ${response.body}');
-
-    if (statusCode >= 200 && statusCode < 300) {
-      try {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        return DatabaseResponse.success(data, statusCode: statusCode);
-      } catch (e) {
-        return DatabaseResponse.success(
-          {'message': response.body, 'raw_response': response.body},
-          statusCode: statusCode,
-        );
-      }
-    } else {
-      try {
-        final errorData = json.decode(response.body) as Map<String, dynamic>;
-        String errorMessage = 'Error del servidor';
-
-        if (errorData.containsKey('error')) {
-          if (errorData['error'] is Map && errorData['error']['message'] != null) {
-            errorMessage = errorData['error']['message'];
-          } else if (errorData['error'] is String) {
-            errorMessage = errorData['error'];
-          }
-        } else if (errorData.containsKey('message')) {
-          errorMessage = errorData['message'];
-        }
-
-        return DatabaseResponse.error(errorMessage, statusCode);
-      } catch (e) {
-        return DatabaseResponse.error('Error HTTP $statusCode: ${response.body}', statusCode);
-      }
     }
   }
 

@@ -186,3 +186,20 @@ class RegisterResponse {
     );
   }
 }
+class UserInfo {
+  final String? token;
+  final int idUsuario;
+  final String nombre;
+  final String rol;
+  final String? email;
+  final String? phone;
+
+  UserInfo({
+    this.token,
+    required this.idUsuario,
+    required this.nombre,
+    required this.rol,
+    this.email,
+    this.phone,
+  });
+}

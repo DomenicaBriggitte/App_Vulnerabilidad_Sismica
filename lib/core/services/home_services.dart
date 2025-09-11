@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_application_1/core/config/database_config.dart';
@@ -64,9 +65,33 @@ class HomeService {
         if (response.statusCode == 200) {
           final Map<String, dynamic> responseData = json.decode(response.body);
 
-          // El servidor retorna directamente los datos del usuario
+          // MANEJO SEGURO DE DIFERENTES ESTRUCTURAS DE RESPUESTA
+          Map<String, dynamic> userData;
+
+          // El servidor puede retornar diferentes estructuras:
+          // - Directamente los datos del usuario
+          // - { data: {userData} }
+          // - { user: {userData} }
+          if (responseData.containsKey('data')) {
+            userData = responseData['data'] as Map<String, dynamic>;
+            print('Datos encontrados en responseData["data"]');
+          } else if (responseData.containsKey('user')) {
+            userData = responseData['user'] as Map<String, dynamic>;
+            print('Datos encontrados en responseData["user"]');
+          } else {
+            // Asumir que responseData ES los datos del usuario
+            userData = responseData;
+            print('Usando responseData directamente como userData');
+          }
+
+          // Validar que userData tiene los campos mínimos necesarios
+          if (!userData.containsKey('id_usuario') && !userData.containsKey('userId')) {
+            print('⚠️ Warning: userData no contiene id_usuario ni userId');
+            print('Estructura recibida: ${userData.keys.toList()}');
+          }
+
           final homeData = HomeData(
-            userInfo: UserInfo.fromJson(responseData),
+            userInfo: UserInfo.fromJson(userData),
             statistics: HomeStatistics(
               totalEdificios: 0,
               edificiosEvaluados: 0,
@@ -86,14 +111,26 @@ class HomeService {
             // Adaptarse a la estructura de error del servidor
             if (errorData['error'] != null && errorData['error']['message'] != null) {
               errorMessage = errorData['error']['message'];
+            } else if (errorData['message'] != null) {
+              errorMessage = errorData['message'];
             } else {
-              errorMessage = errorData['message'] ?? 'Error al obtener perfil';
+              errorMessage = 'Error al obtener perfil';
             }
           } catch (e) {
             errorMessage = 'Error ${response.statusCode}';
           }
 
-          return HomeResponse.error(errorMessage);
+          // Si es error de cliente (4xx), no reintentar
+          if (response.statusCode >= 400 && response.statusCode < 500) {
+            return HomeResponse.error(errorMessage);
+          }
+
+          // Para errores de servidor (5xx), continuar con retry si no es el último intento
+          if (attempts >= maxRetries) {
+            return HomeResponse.error(errorMessage);
+          }
+
+          print('Error ${response.statusCode}, reintentando... (intento $attempts/$maxRetries)');
         }
 
       } on SocketException catch (e) {
@@ -101,6 +138,15 @@ class HomeService {
         if (attempts >= maxRetries) {
           return HomeResponse.error('Error de conexión: ${e.message}');
         }
+        print('Error de conexión, reintentando en ${attempts} segundos...');
+        await Future.delayed(Duration(seconds: attempts));
+
+      } on TimeoutException catch (e) {
+        print('TimeoutException in getUserProfile: $e');
+        if (attempts >= maxRetries) {
+          return HomeResponse.error('Tiempo de espera agotado: $e');
+        }
+        print('Timeout, reintentando en ${attempts} segundos...');
         await Future.delayed(Duration(seconds: attempts));
 
       } catch (e) {
@@ -108,6 +154,7 @@ class HomeService {
         if (attempts >= maxRetries) {
           return HomeResponse.error('Error inesperado: $e');
         }
+        print('Error general, reintentando en ${attempts} segundos...');
         await Future.delayed(Duration(seconds: attempts));
       }
     }

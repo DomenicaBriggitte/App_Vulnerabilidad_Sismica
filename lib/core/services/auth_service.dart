@@ -7,11 +7,24 @@ class AuthService {
 
   // LOGIN con retry automático
   static Future<AuthResponse> login({
-
     required String email,
     required String password,
     int maxRetries = 2, // Máximo 2 intentos
   }) async {
+    // Verificar conexión antes de intentar login
+    try {
+      final connectionCheck = await DatabaseService.checkConnection();
+      if (!connectionCheck.success) {
+        return AuthResponse.failure(
+          error: 'Sin conexión al servidor. ${connectionCheck.error}',
+        );
+      }
+    } catch (e) {
+      return AuthResponse.failure(
+        error: 'Error de conexión: $e',
+      );
+    }
+
     int attemptCount = 0;
 
     while (attemptCount < maxRetries) {
@@ -48,11 +61,37 @@ class AuthService {
             print('Token guardado: ${token.toString().substring(0, 20)}...');
             print('ID de usuario: $userId');
 
+            // OBTENER NOMBRE DEL USUARIO DESPUÉS DEL LOGIN
+            String? userName;
+            try {
+              final userResponse = await DatabaseService.get<dynamic>(
+                '/users/$userId',
+                requiresAuth: true,
+              );
+
+              if (userResponse.success && userResponse.data != null) {
+                // Manejar diferentes estructuras de respuesta
+                Map<String, dynamic> userData = userResponse.data;
+                if (userData.containsKey('data')) {
+                  userData = userData['data'];
+                } else if (userData.containsKey('user')) {
+                  userData = userData['user'];
+                }
+                userName = userData['nombre']?.toString();
+                print('Nombre de usuario obtenido: $userName');
+              }
+            } catch (e) {
+              print('Error obteniendo datos del usuario: $e');
+              // Continuar sin el nombre
+            }
+
             return AuthResponse.success(
               token: token.toString(),
               userId: userId is int ? userId : int.tryParse(userId.toString()),
-              nombre: data['nombre'], // Será null porque el login no retorna nombre
-              message: '¡Login exitoso! Bienvenido',
+              nombre: userName, // Ahora obtenido del endpoint /users/:id
+              message: userName != null
+                  ? '¡Login exitoso! Bienvenido $userName'
+                  : '¡Login exitoso! Bienvenido',
             );
           } else {
             print('Datos incompletos en respuesta exitosa:');

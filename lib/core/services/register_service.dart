@@ -1,9 +1,6 @@
 import 'dart:io';
-
 import 'package:flutter_application_1/core/services/auth_service.dart';
-
 import '../constants/database_endpoints.dart';
-import 'dart:math';
 import 'database_service.dart';
 import '../../data/models/database_response.dart';
 import '../../data/models/register_response.dart';
@@ -23,7 +20,7 @@ class RegisterService {
     // Validaciones previas antes de enviar al servidor
     final validationError = _validateRegistrationData(
       username: username,
-      role: role,
+      role: role, // El rol configurado desde RegisterScreen
       email: email,
       phone: phone,
       password: password,
@@ -40,14 +37,15 @@ class RegisterService {
       attemptCount++;
 
       try {
-        print('🔍 RegisterService: Intento $attemptCount/$maxRetries para $email');
+        print('RegisterService: Intento $attemptCount/$maxRetries para $email');
+        print('Registrando como: $role');
 
-        // Usar multipart
+        // Usar multipart con el rol configurado
         final fields = {
           "nombre": username.trim(),
           "email": email.trim().toLowerCase(),
           "password": password,
-          "rol": role.trim().toLowerCase(),
+          "rol": role, // USAR EL ROL QUE VIENE DEL REGISTER_SCREEN
           "cedula": cedula.trim(),
           "telefono": phone.replaceAll(RegExp(r'[^\d]'), ''),
         };
@@ -57,7 +55,7 @@ class RegisterService {
           fields["telefono"] = fields["telefono"]!.substring(3);
         }
 
-        print('📤 Enviando datos multipart: $fields');
+        print('Enviando datos multipart: $fields');
 
         final response = await DatabaseService.postMultipart<Map<String, dynamic>>(
           DatabaseEndpoints.register,
@@ -66,15 +64,15 @@ class RegisterService {
           fileFieldName: 'foto_perfil',
         );
 
-        print('🔍 DEBUG: Respuesta de DatabaseService:');
+        print('DEBUG: Respuesta de DatabaseService:');
         print('   Success: ${response.success}');
         print('   StatusCode: ${response.statusCode}');
         print('   Data: ${response.data}');
         print('   Error: ${response.error}');
 
         if (response.success) {
-          // ✅ REGISTRO EXITOSO - Iniciar sesión automáticamente
-          print('✅ Registro exitoso, iniciando sesión automática...');
+          // REGISTRO EXITOSO - Iniciar sesión automáticamente
+          print('Registro exitoso, iniciando sesión automática...');
 
           final loginResponse = await AuthService.login(
             email: email,
@@ -82,37 +80,35 @@ class RegisterService {
           );
 
           if (loginResponse.success) {
-            // ✅ Login exitoso después del registro
-            print('✅ Login automático exitoso');
+            // Login exitoso después del registro
+            print('Login automático exitoso');
 
-            // FIXED: Extraer id_usuario específicamente de la respuesta del registro
+            // Extraer id_usuario específicamente de la respuesta del registro
             final userIdFromRegister = response.data?['user']?['id_usuario'];
 
             // Crear RegisterResponse exitoso con token y datos completos
             return RegisterResponse.success(
               token: loginResponse.token,
-              // FIXED: Usar específicamente id_usuario del registro
               userId: userIdFromRegister,
               user: response.data?['user'], // Datos del usuario desde el registro
               message: 'Registro y login exitosos. ¡Bienvenido a SismosApp!',
             );
           } else {
-            // ❌ El registro fue exitoso pero el login automático falló
-            print('⚠️ Registro exitoso pero login automático falló: ${loginResponse.error}');
+            // El registro fue exitoso pero el login automático falló
+            print('Registro exitoso pero login automático falló: ${loginResponse.error}');
 
-            // FIXED: Usar específicamente id_usuario del registro
+            // Usar específicamente id_usuario del registro
             final userIdFromRegister = response.data?['user']?['id_usuario'];
 
             // Devolver éxito del registro pero sin token (sin login automático)
             return RegisterResponse.success(
-              // token: null,  // No hay token por login fallido
-              userId: userIdFromRegister, // FIXED: Solo id_usuario
+              userId: userIdFromRegister,
               user: response.data?['user'],
               message: 'Registro exitoso. Por favor, inicia sesión manualmente.',
             );
           }
         } else {
-          // ❌ ERROR EN EL REGISTRO
+          // ERROR EN EL REGISTRO
           // Manejar errores del cliente (4xx)
           if (response.statusCode != null &&
               response.statusCode! >= 400 &&
@@ -125,7 +121,7 @@ class RegisterService {
           }
 
           // Error de servidor/conexión - continuar con retry
-          print('⚠️ Intento $attemptCount falló: ${response.error}');
+          print('Intento $attemptCount falló: ${response.error}');
           if (attemptCount >= maxRetries) {
             return RegisterResponse.failure(
               error: response.error ?? 'Error de conexión después de $maxRetries intentos',
@@ -134,7 +130,7 @@ class RegisterService {
           }
         }
       } catch (e) {
-        print('❌ Error en intento $attemptCount: $e');
+        print('Error en intento $attemptCount: $e');
 
         if (attemptCount >= maxRetries) {
           return RegisterResponse.failure(
@@ -144,7 +140,7 @@ class RegisterService {
 
         // Esperar antes del retry
         if (attemptCount < maxRetries) {
-          print('⏳ Esperando 1 segundo antes del retry...');
+          print('Esperando 1 segundo antes del retry...');
           await Future.delayed(const Duration(seconds: 1));
         }
       }
@@ -155,7 +151,7 @@ class RegisterService {
     );
   }
 
-  // 🔍 VALIDAR DISPONIBILIDAD DE EMAIL (CORREGIDO)
+  // VERIFICAR DISPONIBILIDAD DE EMAIL
   static Future<bool> checkEmailAvailability(String email) async {
     // Validación básica del formato antes de hacer la petición
     if (email.trim().isEmpty || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim())) {
@@ -163,13 +159,13 @@ class RegisterService {
     }
 
     try {
-      print('🔍 Verificando disponibilidad de email: $email');
+      print('Verificando disponibilidad de email: $email');
 
       final response = await DatabaseService.get<Map<String, dynamic>>(
         '/auth/check-email?email=${Uri.encodeComponent(email.trim().toLowerCase())}',
       );
 
-      print('📡 Respuesta del servidor para email: ${response.data}');
+      print('Respuesta del servidor para email: ${response.data}');
 
       if (response.success && response.data != null) {
         final data = response.data!;
@@ -188,25 +184,25 @@ class RegisterService {
           available = true;
         }
 
-        print('✅ Email $email ${available ? "disponible" : "no disponible"}');
+        print('Email $email ${available ? "disponible" : "no disponible"}');
         return available;
       } else {
         // Si hay error 404, podría significar que no existe (disponible)
         if (response.statusCode == 404) {
-          print('✅ Email $email disponible (404 - no encontrado)');
+          print('Email $email disponible (404 - no encontrado)');
           return true;
         }
 
-        print('⚠️ Error en verificación de email: ${response.error}');
+        print('Error en verificación de email: ${response.error}');
         return false; // En caso de error, asumir no disponible para seguridad
       }
     } catch (e) {
-      print('❌ Excepción verificando email: $e');
+      print('Excepción verificando email: $e');
       return false; // En caso de error, asumir no disponible para seguridad
     }
   }
 
-  // 🔍 VALIDAR DISPONIBILIDAD DE USERNAME (CORREGIDO)
+  // VALIDAR DISPONIBILIDAD DE USERNAME
   static Future<bool> checkUsernameAvailability(String username) async {
     // Validación básica antes de hacer la petición
     final trimmedUsername = username.trim();
@@ -215,13 +211,13 @@ class RegisterService {
     }
 
     try {
-      print('🔍 Verificando disponibilidad de username: $trimmedUsername');
+      print('Verificando disponibilidad de username: $trimmedUsername');
 
       final response = await DatabaseService.get<Map<String, dynamic>>(
         '/auth/check-username?username=${Uri.encodeComponent(trimmedUsername.toLowerCase())}',
       );
 
-      print('📡 Respuesta del servidor para username: ${response.data}');
+      print('Respuesta del servidor para username: ${response.data}');
 
       if (response.success && response.data != null) {
         final data = response.data!;
@@ -240,26 +236,25 @@ class RegisterService {
           available = true;
         }
 
-        print('✅ Username $trimmedUsername ${available ? "disponible" : "no disponible"}');
+        print('Username $trimmedUsername ${available ? "disponible" : "no disponible"}');
         return available;
       } else {
         // Si hay error 404, podría significar que no existe (disponible)
         if (response.statusCode == 404) {
-          print('✅ Username $trimmedUsername disponible (404 - no encontrado)');
+          print('Username $trimmedUsername disponible (404 - no encontrado)');
           return true;
         }
 
-        print('⚠️ Error en verificación de username: ${response.error}');
+        print('Error en verificación de username: ${response.error}');
         return false; // En caso de error, asumir no disponible para seguridad
       }
     } catch (e) {
-      print('❌ Excepción verificando username: $e');
+      print('Excepción verificando username: $e');
       return false; // En caso de error, asumir no disponible para seguridad
     }
   }
 
-  // 🛠️ MÉTODOS PRIVADOS AUXILIARES
-
+  // MÉTODOS PRIVADOS AUXILIARES
   static String? _validateRegistrationData({
     required String username,
     required String role,
@@ -280,15 +275,15 @@ class RegisterService {
     if (username.trim().length < 3) {
       return 'El nombre de usuario debe tener al menos 3 caracteres';
     }
-    if (username.trim().length > 20) {
-      return 'El nombre de usuario no puede exceder 20 caracteres';
+    if (username.trim().length > 50) {
+      return 'El nombre de usuario no puede exceder 50 caracteres';
     }
-    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username.trim())) {
-      return 'El username solo puede contener letras, números y guión bajo';
+    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$').hasMatch(username.trim())) {
+      return 'El nombre solo puede contener letras y espacios';
     }
 
-    // Validar rol - CORREGIDO: mapear roles del cliente a servidor
-    const validRoles = ['admin', 'inspector', 'ayudante', 'cliente'];
+    // VALIDAR ROL - ACEPTA TODOS LOS ROLES VÁLIDOS DEL SISTEMA
+    const validRoles = ['admin', 'inspector', 'ayudante'];
     if (!validRoles.contains(role.trim().toLowerCase())) {
       return 'Rol inválido. Debe ser: ${validRoles.join(', ')}';
     }
@@ -329,10 +324,6 @@ class RegisterService {
     return null; // Todo válido
   }
 
-  // REMOVED: _buildRegistrationPayload method since it's not used anymore
-
-  // REMOVED: _handleSuccessResponse method since we handle it directly in registerUser
-
   static String _extractErrorMessage(DatabaseResponse<Map<String, dynamic>> response) {
     String errorMessage = 'Error desconocido';
 
@@ -362,11 +353,11 @@ class RegisterService {
         errorMessage = response.error!;
       }
     } catch (e) {
-      print('⚠️ Error extrayendo mensaje: $e');
+      print('Error extrayendo mensaje: $e');
       errorMessage = response.error ?? 'Error de formato en la respuesta';
     }
 
-    print('📋 Mensaje de error extraído: $errorMessage');
+    print('Mensaje de error extraído: $errorMessage');
     return errorMessage;
   }
 
@@ -419,13 +410,13 @@ class RegisterService {
     }
   }
 
-  // 🧹 LIMPIAR DATOS DE REGISTRO (Útil para resetear formularios)
+  // LIMPIAR DATOS DE REGISTRO (Útil para resetear formularios)
   static void clearRegistrationCache() {
-    print('🧹 RegisterService: Limpiando cache de registro');
+    print('RegisterService: Limpiando cache de registro');
     // Aquí podrías limpiar cualquier dato temporal si es necesario
   }
 
-  // 📊 OBTENER ESTADÍSTICAS DE REGISTRO (para admins)
+  // OBTENER ESTADÍSTICAS DE REGISTRO (para admins)
   static Future<Map<String, dynamic>?> getRegistrationStats() async {
     try {
       final response = await DatabaseService.get<Map<String, dynamic>>(
@@ -437,7 +428,7 @@ class RegisterService {
       }
       return null;
     } catch (e) {
-      print('⚠️ Error obteniendo estadísticas de registro: $e');
+      print('Error obteniendo estadísticas de registro: $e');
       return null;
     }
   }

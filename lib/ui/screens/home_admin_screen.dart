@@ -43,11 +43,18 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         _errorMessage = null;
       });
 
-      debugPrint('👑 Admin - Datos cargados de SharedPreferences:');
+      // DETECTAR SI ES ADMIN RECIÉN REGISTRADO
+      final isFromRegistration = prefs.getBool('isFromRegistration') ?? false;
+      final isFirstLogin = prefs.getBool('isFirstLogin') ?? false;
+      final registrationSource = prefs.getString('registrationSource');
+
+      debugPrint('HOME ADMIN - Análisis de origen:');
       debugPrint('  - userName: $_userName');
       debugPrint('  - userId: $_userId');
       debugPrint('  - userRole: $_userRole');
-      debugPrint('  - token: ${_token != null ? "presente" : "ausente"}');
+      debugPrint('  - isFromRegistration: $isFromRegistration');
+      debugPrint('  - isFirstLogin: $isFirstLogin');
+      debugPrint('  - registrationSource: $registrationSource');
 
       // Verificar permisos de administrador
       if (_userRole != 'admin') {
@@ -55,7 +62,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         return;
       }
 
-      // Verificar si tenemos los datos necesarios
+      // Verificaciones básicas
       if (_token == null || !AuthService.isLoggedIn()) {
         _handleInvalidSession('Token no válido o sesión expirada');
         return;
@@ -66,13 +73,140 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         return;
       }
 
-      // Cargar datos del servidor
-      await _loadAdminDataFromServer();
+      // FLUJO ESPECÍFICO PARA ADMIN
+      if (isFromRegistration) {
+        debugPrint('🆕 ADMIN RECIÉN REGISTRADO DETECTADO');
+        await _loadAdminDataFromRegistrationWithFallback();
+        await prefs.setBool('isFromRegistration', false);
+        await prefs.setBool('isFirstLogin', false);
+      } else if (isFirstLogin) {
+        debugPrint('DETECTADO: Admin viene de registro, aplicando estrategia especial...');
+        await _loadAdminDataFromServerWithRegistrationFallback();
+        await prefs.setBool('isFirstLogin', false);
+      } else {
+        debugPrint('Admin login normal, usando flujo estándar...');
+        await _loadAdminDataFromServer();
+      }
+
     } catch (e) {
       debugPrint('Error en _loadUserData: $e');
       setState(() {
         _loading = false;
         _errorMessage = 'Error cargando datos locales: $e';
+      });
+    }
+  }
+
+// NUEVO MÉTODO para admin recién registrado
+  Future<void> _loadAdminDataFromRegistrationWithFallback() async {
+    try {
+      debugPrint('ADMIN RECIÉN REGISTRADO - Configurando panel...');
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // VERIFICAR QUE REALMENTE ES ADMIN
+      final localRole = prefs.getString('userRole')?.toLowerCase() ?? '';
+      if (localRole != 'admin') {
+        _handleUnauthorizedAccess('El usuario registrado no es administrador');
+        return;
+      }
+
+      // DATOS DEL REGISTRO DE ADMIN
+      final registrationEmail = prefs.getString('userEmail') ?? '';
+      final registrationPhone = prefs.getString('userPhone') ?? '';
+      final registrationCedula = prefs.getString('userCedula') ?? '';
+
+      debugPrint('ADMIN RECIÉN REGISTRADO - Datos del registro:');
+      debugPrint('  - Email: $registrationEmail');
+      debugPrint('  - Teléfono: $registrationPhone');
+      debugPrint('  - Cédula: $registrationCedula');
+
+      // INTENTAR SERVIDOR PRIMERO (opcional para admin recién registrado)
+      bool serverDataLoaded = false;
+      try {
+        final response = await HomeService.getUserDataWithStats(
+          token: _token!,
+          userId: _userId!,
+          maxRetries: 1,
+          timeout: const Duration(seconds: 8),
+        );
+
+        if (response.success && response.data != null) {
+          final userData = response.data!;
+
+          if (userData.userInfo.rol.toLowerCase() != 'admin') {
+            _handleUnauthorizedAccess('El usuario no tiene permisos de administrador');
+            return;
+          }
+
+          setState(() {
+            if (userData.userInfo.nombre.isNotEmpty) {
+              _userName = userData.userInfo.nombre;
+            }
+            _userInfo = userData.userInfo;
+            _statistics = userData.statistics;
+            _loading = false;
+            _errorMessage = null;
+          });
+
+          await _updateSharedPreferences(userData.userInfo);
+          serverDataLoaded = true;
+          debugPrint('ADMIN RECIÉN REGISTRADO - Datos del servidor aplicados');
+        }
+      } catch (e) {
+        debugPrint('ADMIN RECIÉN REGISTRADO - Servidor no disponible: $e');
+      }
+
+      // FALLBACK CON DATOS LOCALES DEL REGISTRO
+      if (!serverDataLoaded) {
+        // CREAR UserInfo DE ADMIN CON DATOS DEL REGISTRO
+        final localUserInfo = UserInfo(
+          idUsuario: int.tryParse(_userId ?? '0') ?? 0,
+          nombre: _userName,
+          email: registrationEmail,
+          rol: 'admin',
+        );
+
+        // ESTADÍSTICAS VACÍAS PARA ADMIN RECIÉN REGISTRADO
+        final emptyStatistics = HomeStatistics(
+          totalEdificios: 0,
+          edificiosEvaluados: 0,
+          edificiosPendientes: 0,
+          inspeccionesRealizadas: 0,
+        );
+
+        setState(() {
+          _userInfo = localUserInfo;
+          _statistics = emptyStatistics;
+          _loading = false;
+          _errorMessage = null;
+        });
+
+        debugPrint('ADMIN RECIÉN REGISTRADO - Datos locales aplicados exitosamente');
+
+        // MENSAJE ESPECIAL PARA ADMIN RECIÉN REGISTRADO
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.admin_panel_settings, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('¡Panel de administrador configurado para $_userName!'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+
+    } catch (e) {
+      debugPrint('ADMIN RECIÉN REGISTRADO - Error: $e');
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Error configurando panel de administrador: $e';
       });
     }
   }
@@ -148,6 +282,124 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
       setState(() {
         _loading = false;
         _errorMessage = 'Error de conexión: $e';
+      });
+    }
+  }
+
+  // NUEVO MÉTODO - Fallback para Post-Registro de Admin
+  Future<void> _loadAdminDataFromServerWithRegistrationFallback() async {
+    if (_token == null || _userId == null) {
+      _handleInvalidSession('Faltan credenciales de autenticación');
+      return;
+    }
+
+    try {
+      debugPrint('REGISTRO ADMIN - Intentando cargar datos del servidor...');
+
+      // PRIMER INTENTO: HomeService normal
+      final response = await HomeService.getUserDataWithStats(
+        token: _token!,
+        userId: _userId!,
+        maxRetries: 2,
+        timeout: const Duration(seconds: 10),
+      );
+
+      debugPrint('REGISTRO ADMIN - Respuesta HomeService: ${response.success}');
+
+      if (response.success && response.data != null) {
+        // ÉXITO CON HOMESERVICE
+        final userData = response.data!;
+
+        // Verificar permisos de admin
+        if (userData.userInfo.rol.toLowerCase() != 'admin') {
+          _handleUnauthorizedAccess('El usuario registrado no tiene permisos de administrador');
+          return;
+        }
+
+        setState(() {
+          if (userData.userInfo.nombre.isNotEmpty) {
+            _userName = userData.userInfo.nombre;
+          }
+          _userInfo = userData.userInfo;
+          _statistics = userData.statistics;
+          _loading = false;
+          _errorMessage = null;
+        });
+
+        await _updateSharedPreferences(userData.userInfo);
+        debugPrint('REGISTRO ADMIN - Datos del servidor cargados exitosamente');
+
+      } else {
+        // FALLÓ HOMESERVICE - USAR FALLBACK CON DATOS LOCALES
+        debugPrint('REGISTRO ADMIN - HomeService falló, usando fallback con datos locales');
+        await _loadAdminDataWithLocalFallback();
+      }
+
+    } catch (e) {
+      debugPrint('REGISTRO ADMIN - Error cargando del servidor: $e');
+      // FALLBACK CON DATOS LOCALES
+      await _loadAdminDataWithLocalFallback();
+    }
+  }
+
+  // NUEVO MÉTODO - Fallback con Datos Locales para Admin
+  Future<void> _loadAdminDataWithLocalFallback() async {
+    try {
+      debugPrint('REGISTRO ADMIN - Aplicando fallback con datos locales...');
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // VERIFICAR QUE REALMENTE ES ADMIN
+      final localRole = prefs.getString('userRole')?.toLowerCase() ?? '';
+      if (localRole != 'admin') {
+        _handleUnauthorizedAccess('El usuario registrado no es administrador');
+        return;
+      }
+
+      // CREAR UserInfo CON DATOS LOCALES DE ADMIN
+      final localUserInfo = UserInfo(
+        idUsuario: int.tryParse(_userId ?? '0') ?? 0,
+        nombre: _userName,
+        email: prefs.getString('userEmail') ?? '',
+        rol: 'admin',
+      );
+
+      // CREAR ESTADÍSTICAS VACÍAS PARA ADMIN
+      final emptyStatistics = HomeStatistics(
+        totalEdificios: 0,
+        edificiosEvaluados: 0,
+        edificiosPendientes: 0,
+        inspeccionesRealizadas: 0,
+      );
+
+      setState(() {
+        _userInfo = localUserInfo;
+        _statistics = emptyStatistics;
+        _loading = false;
+        _errorMessage = null;
+      });
+
+      debugPrint('REGISTRO ADMIN - Fallback aplicado exitosamente');
+      debugPrint('  - Nombre: ${localUserInfo.nombre}');
+      debugPrint('  - Email: ${localUserInfo.email}');
+      debugPrint('  - Rol: ${localUserInfo.rol}');
+
+      // MOSTRAR MENSAJE ESPECIAL PARA ADMIN
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Bienvenido Administrador! Panel configurado correctamente.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+
+    } catch (e) {
+      debugPrint('REGISTRO ADMIN - Error en fallback local: $e');
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Error configurando panel de administrador: $e';
       });
     }
   }
@@ -400,6 +652,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     );
   }
 
+  // SECCIÓN DE BIENVENIDA MEJORADA PARA ADMIN
   Widget _buildAdminWelcomeSection() {
     return Container(
       width: double.infinity,
@@ -460,6 +713,34 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
             ],
           ),
           const SizedBox(height: 12),
+
+          // MOSTRAR EMAIL DEL ADMIN SI ESTÁ DISPONIBLE
+          if (_userInfo != null && _userInfo!.email.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.email, size: 16, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Admin: ${_userInfo!.email}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
           const Text(
             'Desde aquí puede gestionar edificios, usuarios e inspecciones.',
             style: TextStyle(

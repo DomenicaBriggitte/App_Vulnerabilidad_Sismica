@@ -35,6 +35,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // 🔥 CRÍTICO: Leer TODOS los datos guardados
       setState(() {
         _userName = prefs.getString('userName') ?? 'Usuario';
         _userId = prefs.getString('userId');
@@ -43,13 +45,21 @@ class _HomePageState extends State<HomePage> {
         _errorMessage = null;
       });
 
-      debugPrint('Datos cargados de SharedPreferences:');
+      // DETECTAR ORIGEN DEL USUARIO - MEJORADO
+      final isFromRegistration = prefs.getBool('isFromRegistration') ?? false; // Nuevo flag
+      final isFirstLogin = prefs.getBool('isFirstLogin') ?? false;
+      final registrationSource = prefs.getString('registrationSource');
+
+      debugPrint('HOME - Análisis de origen del usuario:');
       debugPrint('  - userName: $_userName');
       debugPrint('  - userId: $_userId');
       debugPrint('  - userRole: $_userRole');
-      debugPrint('  - token: ${_token != null ? "presente" : "ausente"}');
+      debugPrint('  - isFromRegistration: $isFromRegistration'); // Nuevo
+      debugPrint('  - isFirstLogin: $isFirstLogin');
+      debugPrint('  - registrationSource: $registrationSource');
+      debugPrint('  - token presente: ${_token != null}');
 
-      // Verificar si tenemos los datos necesarios
+      // Validaciones básicas
       if (_token == null || !AuthService.isLoggedIn()) {
         _handleInvalidSession('Token no válido o sesión expirada');
         return;
@@ -60,8 +70,22 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      // Cargar datos del servidor
-      await _loadUserDataFromServer();
+      // FLUJO MEJORADO SEGÚN EL ORIGEN
+      if (isFromRegistration) {
+        debugPrint('🆕 DETECTADO: Usuario viene de REGISTRO RECIENTE');
+        await _loadUserDataFromRegistrationWithFallback();
+        // Limpiar flags después del primer uso
+        await prefs.setBool('isFromRegistration', false);
+        await prefs.setBool('isFirstLogin', false);
+      } else if (isFirstLogin) {
+        debugPrint('🔄 DETECTADO: Primer login después de registro');
+        await _loadUserDataFromServerWithRegistrationFallback();
+        await prefs.setBool('isFirstLogin', false);
+      } else {
+        debugPrint('👤 FLUJO NORMAL: Usuario con login estándar');
+        await _loadUserDataFromServer();
+      }
+
     } catch (e) {
       debugPrint('Error en _loadUserData: $e');
       setState(() {
@@ -70,6 +94,113 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
+
+// NUEVO MÉTODO: Específico para usuarios recién registrados
+  Future<void> _loadUserDataFromRegistrationWithFallback() async {
+    try {
+      debugPrint('REGISTRO RECIENTE - Cargando datos del usuario recién registrado...');
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // PRIORIZAR DATOS DEL REGISTRO (que deberían estar frescos)
+      final registrationEmail = prefs.getString('userEmail') ?? '';
+      final registrationPhone = prefs.getString('userPhone') ?? '';
+      final registrationCedula = prefs.getString('userCedula') ?? '';
+      final registrationTime = prefs.getString('registrationTime') ?? '';
+
+      debugPrint('REGISTRO RECIENTE - Datos disponibles del registro:');
+      debugPrint('  - Email: $registrationEmail');
+      debugPrint('  - Teléfono: $registrationPhone');
+      debugPrint('  - Cédula: $registrationCedula');
+      debugPrint('  - Tiempo de registro: $registrationTime');
+
+      // INTENTAR PRIMERO EL SERVIDOR (pero no es crítico si falla)
+      bool serverDataLoaded = false;
+      try {
+        final response = await HomeService.getUserDataWithStats(
+          token: _token!,
+          userId: _userId!,
+          maxRetries: 1, // Solo 1 intento para no retrasar
+          timeout: const Duration(seconds: 8),
+        );
+
+        if (response.success && response.data != null) {
+          debugPrint('REGISTRO RECIENTE - Datos del servidor obtenidos exitosamente');
+          final userData = response.data!;
+
+          setState(() {
+            if (userData.userInfo.nombre.isNotEmpty) {
+              _userName = userData.userInfo.nombre;
+            }
+            _userInfo = userData.userInfo;
+            _statistics = userData.statistics;
+            _loading = false;
+            _errorMessage = null;
+          });
+
+          await _updateSharedPreferences(userData.userInfo);
+          serverDataLoaded = true;
+        }
+      } catch (e) {
+        debugPrint('REGISTRO RECIENTE - Servidor no disponible: $e');
+      }
+
+      // SI EL SERVIDOR NO RESPONDIÓ, USAR DATOS DEL REGISTRO
+      if (!serverDataLoaded) {
+        debugPrint('REGISTRO RECIENTE - Usando datos locales del registro');
+
+        // CREAR UserInfo CON DATOS COMPLETOS DEL REGISTRO
+        final localUserInfo = UserInfo(
+          idUsuario: int.tryParse(_userId ?? '0') ?? 0,
+          nombre: _userName,
+          email: registrationEmail,
+          rol: _userRole ?? 'user',
+        );
+
+        // ESTADÍSTICAS VACÍAS (normal para usuario recién registrado)
+        final emptyStatistics = HomeStatistics(
+          totalEdificios: 0,
+          edificiosEvaluados: 0,
+          edificiosPendientes: 0,
+          inspeccionesRealizadas: 0,
+        );
+
+        setState(() {
+          _userInfo = localUserInfo;
+          _statistics = emptyStatistics;
+          _loading = false;
+          _errorMessage = null;
+        });
+
+        debugPrint('REGISTRO RECIENTE - Datos locales aplicados exitosamente');
+
+        // MENSAJE ESPECIAL PARA USUARIO RECIÉN REGISTRADO
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.celebration, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('¡Bienvenido $_userName! Registro completado exitosamente.'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+
+    } catch (e) {
+      debugPrint('REGISTRO RECIENTE - Error: $e');
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Error configurando datos del usuario: $e';
+      });
+    }
+  }
+
 
   Future<void> _loadUserDataFromServer() async {
     if (_token == null || _userId == null) {
@@ -133,6 +264,111 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _loading = false;
         _errorMessage = 'Error de conexión: $e';
+      });
+    }
+  }
+
+  // NUEVO MÉTODO - Fallback para Post-Registro
+  Future<void> _loadUserDataFromServerWithRegistrationFallback() async {
+    if (_token == null || _userId == null) {
+      _handleInvalidSession('Faltan credenciales de autenticación');
+      return;
+    }
+
+    try {
+      debugPrint('REGISTRO - Intentando cargar datos del servidor...');
+
+      // PRIMER INTENTO: HomeService normal
+      final response = await HomeService.getUserDataWithStats(
+        token: _token!,
+        userId: _userId!,
+        maxRetries: 2,
+        timeout: const Duration(seconds: 10),
+      );
+
+      debugPrint('REGISTRO - Respuesta HomeService: ${response.success}');
+
+      if (response.success && response.data != null) {
+        // ÉXITO CON HOMESERVICE
+        final userData = response.data!;
+
+        setState(() {
+          if (userData.userInfo.nombre.isNotEmpty) {
+            _userName = userData.userInfo.nombre;
+          }
+          _userInfo = userData.userInfo;
+          _statistics = userData.statistics;
+          _loading = false;
+          _errorMessage = null;
+        });
+
+        await _updateSharedPreferences(userData.userInfo);
+        debugPrint('REGISTRO - Datos del servidor cargados exitosamente');
+
+      } else {
+        // FALLÓ HOMESERVICE - USAR FALLBACK CON DATOS LOCALES
+        debugPrint('REGISTRO - HomeService falló, usando fallback con datos locales');
+        await _loadUserDataWithLocalFallback();
+      }
+
+    } catch (e) {
+      debugPrint('REGISTRO - Error cargando del servidor: $e');
+      // FALLBACK CON DATOS LOCALES
+      await _loadUserDataWithLocalFallback();
+    }
+  }
+
+  // NUEVO MÉTODO - Fallback con Datos Locales
+  Future<void> _loadUserDataWithLocalFallback() async {
+    try {
+      debugPrint('REGISTRO - Aplicando fallback con datos locales...');
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // CREAR UserInfo CON DATOS LOCALES
+      final localUserInfo = UserInfo(
+        idUsuario: int.tryParse(_userId ?? '0') ?? 0,
+        nombre: _userName,
+        email: prefs.getString('userEmail') ?? '',
+        rol: _userRole ?? 'user',
+      );
+
+      // CREAR ESTADÍSTICAS VACÍAS
+      final emptyStatistics = HomeStatistics(
+        totalEdificios: 0,
+        edificiosEvaluados: 0,
+        edificiosPendientes: 0,
+        inspeccionesRealizadas: 0,
+      );
+
+      setState(() {
+        _userInfo = localUserInfo;
+        _statistics = emptyStatistics;
+        _loading = false;
+        _errorMessage = null;
+      });
+
+      debugPrint('REGISTRO - Fallback aplicado exitosamente');
+      debugPrint('  - Nombre: ${localUserInfo.nombre}');
+      debugPrint('  - Email: ${localUserInfo.email}');
+      debugPrint('  - Rol: ${localUserInfo.rol}');
+
+      // MOSTRAR MENSAJE AL USUARIO
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Registro exitoso! Algunos datos se actualizarán en el próximo uso.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+
+    } catch (e) {
+      debugPrint('REGISTRO - Error en fallback local: $e');
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Error configurando datos iniciales: $e';
       });
     }
   }
@@ -349,6 +585,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // SECCIÓN DE BIENVENIDA MEJORADA - Muestra más información
   Widget _buildWelcomeSection() {
     return Container(
       width: double.infinity,
@@ -384,6 +621,34 @@ class _HomePageState extends State<HomePage> {
               color: AppColors.text.withOpacity(0.7),
             ),
           ),
+
+          // MOSTRAR INFORMACIÓN ADICIONAL SI DISPONIBLE
+          if (_userInfo != null && _userInfo!.email.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.email, size: 16, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _userInfo!.email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           if (_userRole != null) ...[
             const SizedBox(height: 8),
             Container(

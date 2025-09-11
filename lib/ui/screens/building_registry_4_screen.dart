@@ -92,6 +92,17 @@ class _BuildingRegistry4ScreenState extends State<BuildingRegistry4Screen> {
       debugPrint("Otra ocupación: ${otraOcupacionController.text}");
       debugPrint("Unidades: ${unidadesController.text}");
 
+      // NUEVA LÓGICA: Derivar campos booleanos de la ocupación seleccionada
+      final bool esHistorico = _tipoSeleccionado == "Histórico";
+      final bool esAlbergue = _tipoSeleccionado == "Albergue";
+      final bool esGubernamental = _tipoSeleccionado == "Gubernamental";
+
+      // Log para verificar la derivación (remover en producción)
+      debugPrint("Booleanos derivados:");
+      debugPrint("  - histórico: $esHistorico");
+      debugPrint("  - albergue: $esAlbergue");
+      debugPrint("  - gubernamental: $esGubernamental");
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -117,6 +128,11 @@ class _BuildingRegistry4ScreenState extends State<BuildingRegistry4Screen> {
             verificacion: widget.verificacion,
             ocupacion: _tipoSeleccionado ?? '',
             unidades: unidadesController.text,
+
+            // CAMPOS CORREGIDOS: Ahora se derivan correctamente de la selección
+            historico: esHistorico,
+            albergue: esAlbergue,
+            gubernamental: esGubernamental,
           ),
         ),
       );

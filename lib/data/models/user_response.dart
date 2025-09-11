@@ -327,4 +327,5 @@ class RoleAssignmentResponse {
       error: error,
     );
   }
+
 }

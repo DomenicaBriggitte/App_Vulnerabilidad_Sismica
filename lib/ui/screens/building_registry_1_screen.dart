@@ -67,6 +67,7 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
     final fileSize = await file.length();
     final mimeType = lookupMimeType(file.path);
 
+    // VALIDACIÓN DE TAMAÑO (10MB máximo)
     if (fileSize > 10 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("El archivo no puede superar los 10 MB")),
@@ -74,23 +75,39 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
       return;
     }
 
-    if (isFoto) {
-      if (mimeType != "image/jpeg" && mimeType != "image/png") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("La foto debe ser JPEG o PNG")),
-        );
-        return;
-      }
-    } else {
-      if (!(mimeType == "image/jpeg" ||
-          mimeType == "image/png" ||
-          mimeType == "application/pdf")) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("El gráfico debe ser JPEG, PNG o PDF")),
-        );
-        return;
-      }
+    // VALIDACIÓN DE FORMATO CORREGIDA - Solo JPG/PNG para ambos
+    if (mimeType != "image/jpeg" && mimeType != "image/png") {
+      final String tipoArchivo = isFoto ? "foto" : "gráfico";
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("La $tipoArchivo debe ser JPEG o PNG únicamente"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
+
+    // VALIDACIÓN ADICIONAL: Verificar extensión del archivo
+    final String extension = file.path.toLowerCase();
+    if (!extension.endsWith('.jpg') &&
+        !extension.endsWith('.jpeg') &&
+        !extension.endsWith('.png')) {
+      final String tipoArchivo = isFoto ? "foto" : "gráfico";
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("La $tipoArchivo debe tener extensión .jpg, .jpeg o .png"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Log para verificar archivo seleccionado (remover en producción)
+    print('Archivo seleccionado:');
+    print('  Tipo: ${isFoto ? "Foto" : "Gráfico"}');
+    print('  Ruta: ${file.path}');
+    print('  MIME: $mimeType');
+    print('  Tamaño: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
 
     setState(() {
       if (isFoto) {
@@ -99,7 +116,19 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
         _grafico = file;
       }
     });
+
+    // Mostrar confirmación al usuario
+    final String tipoArchivo = isFoto ? "foto" : "gráfico";
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$tipoArchivo seleccionada correctamente"),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
+
+
 
   void _siguiente() async {
     if (_formKey.currentState!.validate()) {
@@ -170,7 +199,6 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
   }
 
   Widget _previewWidget(File? file, String label) {
-    bool isPdf = file != null && file.path.toLowerCase().endsWith(".pdf");
     return Column(
       children: [
         Container(
@@ -181,11 +209,19 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: file != null
-              ? isPdf
-              ? const Icon(Icons.picture_as_pdf, size: 60, color: AppColors.error)
-              : ClipRRect(
+              ? ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.file(file, fit: BoxFit.cover),
+            child: Image.file(
+              file,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                    Icons.error,
+                    size: 60,
+                    color: AppColors.error
+                );
+              },
+            ),
           )
               : const Icon(Icons.image, size: 60, color: AppColors.gray500),
         ),
@@ -202,6 +238,17 @@ class _BuildingRegistry1ScreenState extends State<BuildingRegistry1Screen> {
           onPressed: () => _pickFile(label == "Foto"),
           child: Text("Subir $label"),
         ),
+        // Mostrar información del archivo seleccionado
+        if (file != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            file.path.split('/').last,
+            style: const TextStyle(fontSize: 10, color: AppColors.gray500),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ],
     );
   }
